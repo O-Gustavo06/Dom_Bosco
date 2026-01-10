@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useCart } from "../contexts/CartContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 // Helper para normalizar URL da imagem
 function getImageUrl(product) {
@@ -146,9 +147,9 @@ function ProductDetails() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
   const { addToCart } = useCart();
+  const { isDark } = useTheme();
   
   const allImages = getAllImages(product);
-  // Garantir que o índice não ultrapasse o tamanho do array
   const safeImageIndex = allImages.length > 0 
     ? Math.min(currentImageIndex, allImages.length - 1) 
     : 0;
@@ -158,9 +159,9 @@ function ProductDetails() {
 
   useEffect(() => {
     setLoading(true);
-    setCurrentImageIndex(0); // Resetar índice quando muda o produto
-    setImageError(false); // Resetar erro quando muda o produto
-    setProduct(null); // Limpar produto anterior
+    setCurrentImageIndex(0); 
+    setImageError(false); 
+    setProduct(null); 
     
     fetch(`http://localhost:8000/api/products/${id}`)
       .then((res) => {
@@ -276,7 +277,6 @@ function ProductDetails() {
                 </div>
               )}
               
-              {/* Navegação de imagens se houver múltiplas */}
               {allImages.length > 1 && imageUrl && !imageError && (
                 <>
                   <button
@@ -390,7 +390,6 @@ function ProductDetails() {
               </div>
             </div>
 
-            {/* Miniaturas se houver múltiplas imagens */}
             {allImages.length > 1 && (
               <div
                 style={{
@@ -475,8 +474,12 @@ function ProductDetails() {
             <div
               className="card"
               style={{
-                background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
-                border: "2px solid #e2e8f0",
+                background: isDark 
+                  ? "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)"
+                  : "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+                border: isDark 
+                  ? "1px solid rgba(167, 139, 250, 0.15)"
+                  : "2px solid #e2e8f0",
                 padding: "32px",
                 marginBottom: "32px",
               }}
@@ -486,7 +489,7 @@ function ProductDetails() {
                   fontSize: "12px",
                   textTransform: "uppercase",
                   letterSpacing: "1px",
-                  color: "#94a3b8",
+                  color: "var(--text-muted)",
                   marginBottom: "8px",
                   fontWeight: "600",
                 }}
@@ -497,7 +500,9 @@ function ProductDetails() {
                 style={{
                   fontSize: "56px",
                   fontWeight: "800",
-                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                  background: isDark
+                    ? "linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%)"
+                    : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",
@@ -514,14 +519,14 @@ function ProductDetails() {
                   gap: "32px",
                   fontSize: "15px",
                   paddingTop: "24px",
-                  borderTop: "1px solid #e2e8f0",
+                  borderTop: "1px solid var(--border-color)",
                 }}
               >
                 <div>
-                  <span style={{ color: "#94a3b8", display: "block", marginBottom: "4px" }}>
+                  <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
                     Estoque
                   </span>
-                  <strong style={{ color: "#475569", fontSize: "18px" }}>
+                  <strong style={{ color: "var(--text-primary)", fontSize: "18px" }}>
                     {product.stock} unidades
                   </strong>
                 </div>

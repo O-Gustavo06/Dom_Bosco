@@ -4,7 +4,6 @@ require_once __DIR__ . '/config/database.php';
 
 $pdo = Database::connect();
 
-// Atualizar os 4 produtos com as imagens que existem
 $updates = [
     27 => 'caderno-brochura.jpg',
     31 => 'lapis-preto.jpg',

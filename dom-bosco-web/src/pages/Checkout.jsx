@@ -1,10 +1,12 @@
 import { useCart } from "../contexts/CartContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
+import { useTheme } from "../contexts/ThemeContext";
 
 function Checkout() {
   const { cart, total, clearCart } = useCart();
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
@@ -102,7 +104,7 @@ function Checkout() {
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
         <div className="fade-in" style={{ marginBottom: "48px" }}>
           <h1 style={{ marginBottom: "12px" }}>Finalizar Compra</h1>
-          <p style={{ fontSize: "18px", color: "#64748b" }}>
+          <p style={{ fontSize: "18px", color: "var(--text-secondary)" }}>
             Complete suas informações para finalizar o pedido
           </p>
         </div>
@@ -128,7 +130,7 @@ function Checkout() {
                   fontSize: "24px",
                   fontWeight: "700",
                   marginBottom: "28px",
-                  color: "#0f172a",
+                  color: "var(--text-primary)",
                 }}
               >
                 Dados de Entrega
@@ -158,7 +160,7 @@ function Checkout() {
                       marginBottom: "8px",
                       fontSize: "14px",
                       fontWeight: "500",
-                      color: "#475569",
+                      color: "var(--text-secondary)",
                     }}
                   >
                     Nome Completo
@@ -181,7 +183,7 @@ function Checkout() {
                       marginBottom: "8px",
                       fontSize: "14px",
                       fontWeight: "500",
-                      color: "#475569",
+                      color: "var(--text-secondary)",
                     }}
                   >
                     E-mail
@@ -307,7 +309,10 @@ function Checkout() {
                 position: "sticky",
                 top: "120px",
                 padding: "32px",
-                background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+                background: isDark
+                  ? "linear-gradient(135deg, #262626 0%, #1a1a1a 100%)"
+                  : "linear-gradient(135deg, #ffffff 0%, #f4f4f4 100%)",
+                border: isDark ? "1px solid rgba(167, 139, 250, 0.15)" : "1px solid #e8e8e8",
               }}
             >
               <h2
@@ -315,7 +320,7 @@ function Checkout() {
                   fontSize: "24px",
                   fontWeight: "700",
                   marginBottom: "28px",
-                  color: "#0f172a",
+                  color: "var(--text-primary)",
                 }}
               >
                 Resumo do Pedido
@@ -330,14 +335,14 @@ function Checkout() {
                       justifyContent: "space-between",
                       marginBottom: "16px",
                       paddingBottom: "16px",
-                      borderBottom: "1px solid #e2e8f0",
+                      borderBottom: "1px solid var(--border-color)",
                     }}
                   >
                     <div>
-                      <div style={{ fontWeight: "600", fontSize: "15px", marginBottom: "4px" }}>
+                      <div style={{ fontWeight: "600", fontSize: "15px", marginBottom: "4px", color: "var(--text-primary)" }}>
                         {item.name}
                       </div>
-                      <div style={{ fontSize: "13px", color: "#64748b" }}>
+                      <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
                         {item.quantity}x R$ {item.price.toFixed(2)}
                       </div>
                     </div>
@@ -345,7 +350,7 @@ function Checkout() {
                       style={{
                         fontWeight: "700",
                         fontSize: "16px",
-                        color: "#475569",
+                        color: "var(--text-secondary)",
                       }}
                     >
                       R$ {(item.price * item.quantity).toFixed(2)}
@@ -357,7 +362,7 @@ function Checkout() {
               <div
                 style={{
                   paddingTop: "24px",
-                  borderTop: "2px solid #e2e8f0",
+                  borderTop: "1px solid var(--border-color)",
                   marginBottom: "24px",
                 }}
               >
@@ -369,10 +374,10 @@ function Checkout() {
                     marginBottom: "12px",
                   }}
                 >
-                  <span style={{ fontSize: "15px", color: "#64748b" }}>
+                  <span style={{ fontSize: "15px", color: "var(--text-secondary)" }}>
                     Subtotal
                   </span>
-                  <span style={{ fontWeight: "600", fontSize: "16px" }}>
+                  <span style={{ fontWeight: "600", fontSize: "16px", color: "var(--text-primary)" }}>
                     R$ {total.toFixed(2)}
                   </span>
                 </div>
@@ -384,7 +389,7 @@ function Checkout() {
                     marginBottom: "16px",
                   }}
                 >
-                  <span style={{ fontSize: "15px", color: "#64748b" }}>
+                  <span style={{ fontSize: "15px", color: "var(--text-secondary)" }}>
                     Frete
                   </span>
                   <span
@@ -405,13 +410,15 @@ function Checkout() {
                     fontSize: "28px",
                     fontWeight: "800",
                     paddingTop: "16px",
-                    borderTop: "2px solid #e2e8f0",
+                    borderTop: "1px solid var(--border-color)",
                   }}
                 >
-                  <span style={{ color: "#0f172a" }}>Total</span>
+                  <span style={{ color: "var(--text-primary)" }}>Total</span>
                   <span
                     style={{
-                      background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                      background: isDark
+                        ? "linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%)"
+                        : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",

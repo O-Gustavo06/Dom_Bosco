@@ -1,24 +1,43 @@
 import { Link, useLocation } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
+import { useTheme } from "../contexts/ThemeContext";
+import { useState, useEffect } from "react";
 
 function Header() {
   const location = useLocation();
   const { cart } = useCart();
+  const { isDark, toggleTheme } = useTheme();
+  const [user, setUser] = useState(null);
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, [location]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    window.location.href = "/";
+  };
 
   const isActive = (path) => location.pathname === path;
 
   return (
     <header
       style={{
-        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        backgroundColor: "var(--surface)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(226, 232, 240, 0.8)",
-        boxShadow: "0 4px 24px rgba(0, 0, 0, 0.04)",
+        borderBottom: "1px solid var(--border-color)",
+        boxShadow: "var(--shadow-sm)",
         position: "sticky",
         top: 0,
         zIndex: 1000,
+        transition: "all 0.3s ease",
       }}
     >
       <div
@@ -155,33 +174,155 @@ function Header() {
             )}
           </Link>
 
-          <Link
-            to="/login"
+          {user ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                marginLeft: "16px",
+                paddingLeft: "16px",
+                borderLeft: "1px solid var(--border-color)",
+              }}
+            >
+              {user.role === "admin" && (
+                <Link
+                  to="/admin"
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+                    color: "white",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    textDecoration: "none",
+                    transition: "all 0.3s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(168, 85, 247, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  ⚙️ Admin
+                </Link>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--text-secondary)",
+                    fontWeight: "500",
+                  }}
+                >
+                  Bem-vindo!
+                </span>
+                <span
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: "700",
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {user.name}
+                </span>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                Sair
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              style={{
+                padding: "12px 24px",
+                borderRadius: "12px",
+                textDecoration: "none",
+                color: isActive("/login") ? "#3b82f6" : "var(--text-secondary)",
+                backgroundColor: isActive("/login") ? "rgba(59, 130, 246, 0.1)" : "transparent",
+                fontWeight: isActive("/login") ? "600" : "500",
+                fontSize: "15px",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive("/login")) {
+                  e.currentTarget.style.backgroundColor = "rgba(124, 58, 237, 0.05)";
+                  e.currentTarget.style.color = "#7c3aed";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive("/login")) {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                }
+              }}
+            >
+              Login
+            </Link>
+          )}
+
+          <button
+            onClick={toggleTheme}
             style={{
-              padding: "12px 24px",
+              padding: "10px 16px",
               borderRadius: "12px",
-              textDecoration: "none",
-              color: isActive("/login") ? "#3b82f6" : "#64748b",
-              backgroundColor: isActive("/login") ? "rgba(59, 130, 246, 0.1)" : "transparent",
-              fontWeight: isActive("/login") ? "600" : "500",
-              fontSize: "15px",
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              border: "1px solid var(--border-color)",
+              background: "var(--surface-gray)",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              fontSize: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.3s ease",
+              marginLeft: "12px",
             }}
             onMouseEnter={(e) => {
-              if (!isActive("/login")) {
-                e.currentTarget.style.backgroundColor = "rgba(124, 58, 237, 0.05)";
-                e.currentTarget.style.color = "#7c3aed";
-              }
+              e.currentTarget.style.background = "var(--surface-hover)";
+              e.currentTarget.style.transform = "scale(1.1)";
             }}
             onMouseLeave={(e) => {
-              if (!isActive("/login")) {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "#64748b";
-              }
+              e.currentTarget.style.background = "var(--surface-gray)";
+              e.currentTarget.style.transform = "scale(1)";
             }}
+            title={isDark ? "Modo claro" : "Modo escuro"}
           >
-            Login
-          </Link>
+            {isDark ? "☀️" : "🌙"}
+          </button>
         </nav>
       </div>
     </header>
@@ -189,3 +330,4 @@ function Header() {
 }
 
 export default Header;
+

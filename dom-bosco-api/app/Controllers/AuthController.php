@@ -1,33 +1,40 @@
 <?php
 
 require_once __DIR__ . '/../Models/User.php';
+require_once __DIR__ . '/../Services/Response.php';
 
 class AuthController
 {
+    private User $userModel;
+
+    public function __construct()
+    {
+        $this->userModel = new User();
+    }
+
     public function login()
     {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if (empty($data['email']) || empty($data['password'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'E-mail e senha são obrigatórios']);
-            return;
+        if (!isset($data['email']) || !isset($data['password'])) {
+            Response::json([
+                'error' => 'Email e senha são obrigatórios'
+            ], 400);
         }
 
-        $userModel = new User();
-        $user = $userModel->findByEmail($data['email']);
+        $user = $this->userModel->findByEmail($data['email']);
 
-        if (!$user || !password_verify($data['password'], $user['password'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Credenciais inválidas']);
-            return;
+        if (!$user || $user['password'] !== $data['password']) {
+            Response::json([
+                'error' => 'Credenciais inválidas'
+            ], 401);
         }
 
-        unset($user['password']);
-
-        echo json_encode([
-            'success' => true,
-            'user' => $user
+        Response::json([
+            'id'    => $user['id'],
+            'name'  => $user['name'],
+            'email' => $user['email'],
+            'role'  => $user['role']
         ]);
     }
 }

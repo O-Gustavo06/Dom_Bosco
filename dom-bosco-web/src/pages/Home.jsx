@@ -57,7 +57,7 @@ function Home() {
         <div className="empty-state">
           <h2>Ops! Algo deu errado</h2>
           <p>{error}</p>
-          <p style={{ marginTop: "16px", fontSize: "14px", color: "#94a3b8" }}>
+          <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--text-muted)" }}>
             Verifique se o servidor backend está rodando na porta 8000
           </p>
         </div>
@@ -80,7 +80,7 @@ function Home() {
               fontWeight: "800",
               marginBottom: "12px",
               letterSpacing: "-1.5px",
-              color: "#1e293b",
+              color: "var(--text-primary)",
             }}
           >
             Todos os Produtos
@@ -89,7 +89,7 @@ function Home() {
           <p
             style={{
               fontSize: "16px",
-              color: "#64748b",
+              color: "var(--text-secondary)",
               marginBottom: "32px",
             }}
           >

@@ -1,10 +1,8 @@
 <?php
 
-// 🔹 Permitir que arquivos físicos (imagens, css, etc) sejam servidos
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $publicFile = __DIR__ . $uri;
 
-// Gerar imagem padrão dinamicamente se não existir
 if ($uri === '/images/products/default.png') {
     $defaultImagePath = __DIR__ . '/images/products/default.png';
     
@@ -15,22 +13,18 @@ if ($uri === '/images/products/default.png') {
         exit;
     }
     
-    // Gerar imagem placeholder se a extensão GD estiver disponível
     if (function_exists('imagecreatetruecolor')) {
         $width = 400;
         $height = 400;
         $image = imagecreatetruecolor($width, $height);
         
-        // Cor de fundo (cinza claro)
         $bgColor = imagecolorallocate($image, 240, 240, 240);
         imagefill($image, 0, 0, $bgColor);
         
-        // Cor do texto (cinza escuro)
         $textColor = imagecolorallocate($image, 150, 150, 150);
         
-        // Texto "Sem Imagem"
         $text = 'Sem Imagem';
-        $font = 5; // Fonte built-in do GD
+        $font = 5; 
         $textWidth = imagefontwidth($font) * strlen($text);
         $textHeight = imagefontheight($font);
         $x = ($width - $textWidth) / 2;
@@ -44,15 +38,12 @@ if ($uri === '/images/products/default.png') {
         exit;
     }
     
-    // Se GD não estiver disponível, retornar 404
     http_response_code(404);
     echo json_encode(['error' => 'Imagem padrão não encontrada e não foi possível gerar']);
     exit;
 }
 
-// Servir outros arquivos estáticos diretamente
 if ($uri !== '/' && file_exists($publicFile) && is_file($publicFile)) {
-    // Determinar tipo MIME baseado na extensão
     $mimeTypes = [
         'jpg' => 'image/jpeg',
         'jpeg' => 'image/jpeg',
@@ -74,17 +65,14 @@ if ($uri !== '/' && file_exists($publicFile) && is_file($publicFile)) {
     exit;
 }
 
-// 🔹 CORS — essencial para React
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
 
-// 🔹 Preflight (fetch / axios)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// 🔹 Rotas da API
 require_once __DIR__ . '/../routes/api.php';

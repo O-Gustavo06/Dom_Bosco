@@ -9,7 +9,7 @@ function Cart() {
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
         <div className="fade-in" style={{ marginBottom: "48px" }}>
           <h1 style={{ marginBottom: "12px" }}>Carrinho de Compras</h1>
-          <p style={{ fontSize: "18px", color: "#64748b" }}>
+          <p style={{ fontSize: "18px", color: "var(--text-secondary)" }}>
             Revise seus itens antes de finalizar
           </p>
         </div>
@@ -32,7 +32,7 @@ function Cart() {
             <Link to="/">
               <button
                 style={{
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  background: "var(--primary-gradient)",
                   padding: "14px 32px",
                   fontSize: "16px",
                 }}
@@ -63,7 +63,7 @@ function Cart() {
                         fontSize: "20px",
                         fontWeight: "700",
                         marginBottom: "8px",
-                        color: "#0f172a",
+                        color: "var(--text-primary)",
                       }}
                     >
                       {item.name}
@@ -73,7 +73,7 @@ function Cart() {
                         display: "flex",
                         gap: "16px",
                         alignItems: "center",
-                        color: "#64748b",
+                        color: "var(--text-secondary)",
                         fontSize: "15px",
                       }}
                     >
@@ -126,10 +126,11 @@ function Cart() {
             <div
               className="card fade-in"
               style={{
-                background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
-                border: "2px solid #e2e8f0",
+                background: "var(--surface-gray)",
+                border: "1px solid var(--border-color)",
                 position: "sticky",
                 bottom: "20px",
+                padding: "32px",
               }}
             >
               <div
@@ -139,7 +140,7 @@ function Cart() {
                   alignItems: "center",
                   marginBottom: "32px",
                   paddingBottom: "24px",
-                  borderBottom: "2px solid #e2e8f0",
+                  borderBottom: "1px solid var(--border-color)",
                 }}
               >
                 <h2 style={{ fontSize: "28px", fontWeight: "700" }}>Total:</h2>
@@ -176,7 +177,7 @@ function Cart() {
                     style={{
                       width: "100%",
                       padding: "14px",
-                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      background: "var(--primary-gradient)",
                       fontSize: "16px",
                       fontWeight: "700",
                     }}

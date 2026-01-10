@@ -98,7 +98,7 @@ function ProductCard({ product }) {
       {/* IMAGEM */}
       <div
         style={{
-          backgroundColor: imageUrl && !imageError ? "transparent" : "#f1f5f9",
+          backgroundColor: imageUrl && !imageError ? "transparent" : "var(--surface-gray)",
           padding: imageUrl && !imageError ? 0 : "32px",
           display: "flex",
           alignItems: "center",
@@ -116,7 +116,7 @@ function ProductCard({ product }) {
               setImageError(true);
             }}
             style={{
-              width: "63%",
+              width: "60%",
               height: "100%",
               objectFit: "cover",
               display: "center",
@@ -130,8 +130,8 @@ function ProductCard({ product }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: "100%",
-              height: "100%",
+              width: "80%",
+              height: "80%",
             }}
           >
             📦
@@ -164,7 +164,7 @@ function ProductCard({ product }) {
             fontSize: "18px",
             fontWeight: "700",
             marginBottom: "8px",
-            color: "#1e293b",
+            color: "var(--text-primary)",
             lineHeight: "1.4",
             letterSpacing: "-0.2px",
           }}
@@ -175,7 +175,7 @@ function ProductCard({ product }) {
         <p
           style={{
             fontSize: "14px",
-            color: "#64748b",
+            color: "var(--text-secondary)",
             lineHeight: "1.6",
             marginBottom: "20px",
             flex: 1,
@@ -195,14 +195,14 @@ function ProductCard({ product }) {
             alignItems: "center",
             marginBottom: "16px",
             paddingTop: "16px",
-            borderTop: "1px solid #f1f5f9",
+            borderTop: "1px solid var(--border-light)",
           }}
         >
           <span
             style={{
               fontSize: "24px",
               fontWeight: "800",
-              color: "#1e293b",
+              color: "var(--text-primary)",
               letterSpacing: "-0.5px",
             }}
           >

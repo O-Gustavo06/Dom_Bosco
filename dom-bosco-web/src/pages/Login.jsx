@@ -1,15 +1,40 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTheme } from "../contexts/ThemeContext";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { isDark } = useTheme();
+
+  // Validação de email
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    // Validação local ANTES de enviar
+    if (!email.trim()) {
+      setError("E-mail é obrigatório");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("E-mail inválido. Use o formato: seu@email.com");
+      return;
+    }
+
+    if (!password) {
+      setError("Senha é obrigatória");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -28,6 +53,7 @@ function Login() {
         return;
       }
 
+      localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       window.location.href = "/";
     } catch {
@@ -44,7 +70,10 @@ function Login() {
           className="card fade-in"
           style={{
             padding: "48px",
-            background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+            background: isDark 
+              ? "linear-gradient(135deg, #262626 0%, #1a1a1a 100%)"
+              : "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+            border: isDark ? "1px solid rgba(167, 139, 250, 0.15)" : "none",
           }}
         >
           <div style={{ textAlign: "center", marginBottom: "40px" }}>
@@ -61,18 +90,18 @@ function Login() {
               🔐
             </div>
 
-            <h1 style={{ fontSize: "32px", fontWeight: "800" }}>
+            <h1 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)" }}>
               Bem-vindo de volta
             </h1>
 
-            <p style={{ color: "#64748b" }}>
+            <p style={{ color: "var(--text-secondary)" }}>
               Entre com suas credenciais para continuar
             </p>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: "20px" }}>
-              <label>E-mail</label>
+              <label style={{ color: "var(--text-secondary)" }}>E-mail</label>
               <input
                 type="email"
                 placeholder="seu@email.com"
@@ -84,7 +113,7 @@ function Login() {
             </div>
 
             <div style={{ marginBottom: "24px" }}>
-              <label>Senha</label>
+              <label style={{ color: "var(--text-secondary)" }}>Senha</label>
               <input
                 type="password"
                 placeholder="••••••••"
@@ -108,6 +137,12 @@ function Login() {
                 width: "100%",
                 padding: "14px",
                 fontWeight: "600",
+                background: "var(--primary-gradient)",
+                color: "white",
+                border: "none",
+                borderRadius: "12px",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
               }}
             >
               {loading ? "Entrando..." : "Entrar"}
@@ -118,16 +153,16 @@ function Login() {
             style={{
               marginTop: "24px",
               paddingTop: "24px",
-              borderTop: "1px solid #e2e8f0",
+              borderTop: "1px solid var(--border-color)",
               textAlign: "center",
             }}
           >
-            <p style={{ fontSize: "14px", color: "#64748b" }}>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
               Não tem uma conta?{" "}
               <Link
                 to="/register"
                 style={{
-                  color: "#2563eb",
+                  color: isDark ? "#a78bfa" : "#2563eb",
                   fontWeight: "600",
                   textDecoration: "none",
                 }}

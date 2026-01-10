@@ -5,6 +5,8 @@ import Register from "../pages/Register";
 import Cart from "../pages/Cart";
 import Checkout from "../pages/Checkout";
 import ProductDetails from "../pages/ProductDetails";
+import AdminRoute from "./AdminRoute";
+import Dashboard from "../pages/admin/Dashboard";
 
 function AppRoutes() {
   return (
@@ -16,6 +18,16 @@ function AppRoutes() {
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      
+      {/* Rotas de Admin */}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <Dashboard />
+          </AdminRoute>
+        }
+      />
     </Routes>
   );
 }

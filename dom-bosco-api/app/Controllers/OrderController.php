@@ -21,7 +21,7 @@ class OrderController
         }
 
         $orderData = [
-            'user_id' => $input['user_id'] ?? 1, // provisório
+            'user_id' => $input['user_id'] ?? 1, 
             'total'   => $input['total'],
             'items'   => $input['items']
         ];

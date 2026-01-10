@@ -1,0 +1,224 @@
+<?php
+
+require_once __DIR__ . '/../Models/Product.php';
+require_once __DIR__ . '/../Utils/JWT.php';
+
+class AdminProductController
+{
+    private Product $product;
+
+    public function __construct()
+    {
+        $this->product = new Product();
+    }
+
+    /**
+     * Validação de admin via JWT
+     */
+    private function ensureAdmin(): ?array
+    {
+        $token = JWT::getTokenFromHeader();
+        
+        if (!$token) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Token não fornecido']);
+            exit;
+        }
+
+        $payload = JWT::verify($token);
+        
+        if (!$payload) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Token inválido ou expirado']);
+            exit;
+        }
+
+        if ($payload['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acesso permitido apenas para administradores']);
+            exit;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Valida dados do produto
+     */
+    private function validateProductData(array $data): array
+    {
+        $errors = [];
+
+        // Validação de nome
+        if (empty($data['name'])) {
+            $errors[] = 'Nome é obrigatório';
+        } else if (strlen($data['name']) < 3 || strlen($data['name']) > 255) {
+            $errors[] = 'Nome deve ter entre 3 e 255 caracteres';
+        }
+
+        // Validação de preço
+        if (!isset($data['price'])) {
+            $errors[] = 'Preço é obrigatório';
+        } else if ($data['price'] < 0) {
+            $errors[] = 'Preço não pode ser negativo';
+        } else if (!is_numeric($data['price'])) {
+            $errors[] = 'Preço deve ser um número';
+        }
+
+        // Validação de stock
+        if (!isset($data['stock'])) {
+            $errors[] = 'Stock é obrigatório';
+        } else if ($data['stock'] < 0) {
+            $errors[] = 'Stock não pode ser negativo';
+        } else if (!is_int($data['stock']) && !ctype_digit((string)$data['stock'])) {
+            $errors[] = 'Stock deve ser um número inteiro';
+        }
+
+        // Validação de category_id
+        if (empty($data['category_id'])) {
+            $errors[] = 'Category ID é obrigatório';
+        } else if (!ctype_digit((string)$data['category_id'])) {
+            $errors[] = 'Category ID deve ser um número inteiro';
+        }
+
+        // Descrição (opcional)
+        if (isset($data['description']) && strlen($data['description']) > 1000) {
+            $errors[] = 'Descrição não pode ter mais de 1000 caracteres';
+        }
+
+        return $errors;
+    }
+
+    /**
+     * LISTAR PRODUTOS (ADMIN)
+     */
+    public function index(): void
+    {
+        $this->ensureAdmin();
+
+        $products = $this->product->getAllAdmin();
+
+        http_response_code(200);
+        echo json_encode(['products' => $products]);
+    }
+
+    /**
+     * CRIAR PRODUTO
+     */
+    public function store(): void
+    {
+        $this->ensureAdmin();
+
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        // Validação
+        $errors = $this->validateProductData($data);
+
+        if (!empty($errors)) {
+            http_response_code(400);
+            echo json_encode(['errors' => $errors]);
+            return;
+        }
+
+        try {
+            $productId = $this->product->create([
+                'name'        => $data['name'],
+                'description' => $data['description'] ?? '',
+                'price'       => (float)$data['price'],
+                'stock'       => (int)$data['stock'],
+                'category_id' => (int)$data['category_id'],
+                'image'       => $data['image'] ?? 'default.png'
+            ]);
+
+            http_response_code(201);
+            echo json_encode([
+                'message' => 'Produto criado com sucesso',
+                'product_id' => $productId
+            ]);
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * ATUALIZAR PRODUTO
+     */
+    public function update(int $id): void
+    {
+        $this->ensureAdmin();
+
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        $product = $this->product->getById($id);
+
+        if (!$product) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Produto não encontrado']);
+            return;
+        }
+
+        // Validação dos dados fornecidos
+        $errors = [];
+
+        if (isset($data['name']) && strlen($data['name']) < 3) {
+            $errors[] = 'Nome deve ter no mínimo 3 caracteres';
+        }
+
+        if (isset($data['price']) && $data['price'] < 0) {
+            $errors[] = 'Preço não pode ser negativo';
+        }
+
+        if (isset($data['stock']) && $data['stock'] < 0) {
+            $errors[] = 'Stock não pode ser negativo';
+        }
+
+        if (!empty($errors)) {
+            http_response_code(400);
+            echo json_encode(['errors' => $errors]);
+            return;
+        }
+
+        try {
+            $this->product->update($id, [
+                'name'        => $data['name']        ?? $product['name'],
+                'description' => $data['description'] ?? $product['description'],
+                'price'       => isset($data['price']) ? (float)$data['price'] : $product['price'],
+                'stock'       => isset($data['stock']) ? (int)$data['stock'] : $product['stock'],
+                'category_id' => $data['category_id'] ?? $product['category_id'],
+                'image'       => $data['image']       ?? $product['image'],
+                'active'      => isset($data['active']) ? (int)$data['active'] : $product['active']
+            ]);
+
+            echo json_encode(['message' => 'Produto atualizado com sucesso']);
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * DELETAR PRODUTO
+     */
+    public function delete(int $id): void
+    {
+        $this->ensureAdmin();
+
+        $product = $this->product->getById($id);
+
+        if (!$product) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Produto não encontrado']);
+            return;
+        }
+
+        try {
+            $this->product->delete($id);
+
+            echo json_encode(['message' => 'Produto deletado com sucesso']);
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+}

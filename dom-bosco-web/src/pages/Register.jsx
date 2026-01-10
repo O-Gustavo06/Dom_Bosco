@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../contexts/ThemeContext";
 
 function Register() {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
 
   const [form, setForm] = useState({
     name: "",
@@ -13,14 +15,52 @@ function Register() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Validação de email
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validação de senha
+  const isValidPassword = (password) => {
+    return password.length >= 6;
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
+
+    // Validação local ANTES de enviar
+    if (!form.name.trim()) {
+      setError("Nome é obrigatório");
+      return;
+    }
+
+    if (!form.email.trim()) {
+      setError("E-mail é obrigatório");
+      return;
+    }
+
+    if (!isValidEmail(form.email)) {
+      setError("E-mail inválido. Use o formato: seu@email.com");
+      return;
+    }
+
+    if (!form.password) {
+      setError("Senha é obrigatória");
+      return;
+    }
+
+    if (!isValidPassword(form.password)) {
+      setError("Senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const response = await fetch("http://localhost:8000/api/register", {
@@ -49,8 +89,17 @@ function Register() {
   return (
     <div className="container">
       <div style={{ maxWidth: "480px", margin: "0 auto" }}>
-        <div className="card fade-in" style={{ padding: "40px" }}>
-          <h1 style={{ marginBottom: "24px" }}>Criar conta</h1>
+        <div 
+          className="card fade-in" 
+          style={{ 
+            padding: "40px",
+            background: isDark 
+              ? "linear-gradient(135deg, #262626 0%, #1a1a1a 100%)"
+              : "var(--surface)",
+            border: isDark ? "1px solid rgba(167, 139, 250, 0.15)" : "none",
+          }}
+        >
+          <h1 style={{ marginBottom: "24px", color: "var(--text-primary)" }}>Criar conta</h1>
 
           {error && (
             <p style={{ color: "#ef4444", marginBottom: "16px" }}>{error}</p>
@@ -58,7 +107,7 @@ function Register() {
 
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: "16px" }}>
-              <label>Nome</label>
+              <label style={{ color: "var(--text-secondary)" }}>Nome</label>
               <input
                 type="text"
                 name="name"
@@ -69,7 +118,7 @@ function Register() {
             </div>
 
             <div style={{ marginBottom: "16px" }}>
-              <label>E-mail</label>
+              <label style={{ color: "var(--text-secondary)" }}>E-mail</label>
               <input
                 type="email"
                 name="email"
@@ -80,7 +129,7 @@ function Register() {
             </div>
 
             <div style={{ marginBottom: "24px" }}>
-              <label>Senha</label>
+              <label style={{ color: "var(--text-secondary)" }}>Senha</label>
               <input
                 type="password"
                 name="password"
@@ -90,7 +139,21 @@ function Register() {
               />
             </div>
 
-            <button type="submit" disabled={loading}>
+            <button 
+              type="submit" 
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "14px",
+                fontWeight: "600",
+                background: "var(--primary-gradient)",
+                color: "white",
+                border: "none",
+                borderRadius: "12px",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+              }}
+            >
               {loading ? "Cadastrando..." : "Cadastrar"}
             </button>
           </form>
