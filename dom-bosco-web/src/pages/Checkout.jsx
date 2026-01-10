@@ -1,17 +1,39 @@
 import { useCart } from "../contexts/CartContext";
 import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
 
 function Checkout() {
   const { cart, total, clearCart } = useCart();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    address: "",
+    city: "",
+    zipCode: "",
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   async function handleCheckout(e) {
     e.preventDefault();
+    setError("");
     
     if (cart.length === 0) {
-      alert("Seu carrinho está vazio!");
+      setError("Seu carrinho está vazio!");
       return;
     }
+
+    setLoading(true);
 
     try {
       const response = await fetch("http://localhost:8000/api/orders", {
@@ -22,21 +44,42 @@ function Checkout() {
         body: JSON.stringify({
           items: cart,
           total,
+          customer: {
+            name: formData.name,
+            email: formData.email,
+            address: formData.address,
+            city: formData.city,
+            zipCode: formData.zipCode,
+          },
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        throw new Error(`Erro ao processar resposta do servidor: ${response.status}`);
+      }
 
-      if (data.success) {
-        alert(`Pedido #${data.order_id} criado com sucesso!`);
+      if (!response.ok) {
+        throw new Error(data.error || data.message || `Erro HTTP: ${response.status}`);
+      }
+
+      // Aceita diferentes formatos de resposta do backend
+      const orderId = data.order_id || data.id || data.orderId || data.order?.id;
+      
+      if (data.success || orderId) {
+        alert(`Pedido #${orderId} criado com sucesso!`);
         clearCart();
         navigate("/");
       } else {
-        alert("Erro ao finalizar pedido");
+        throw new Error(data.error || data.message || "Erro ao finalizar pedido");
       }
     } catch (error) {
-      console.error(error);
-      alert("Erro ao conectar com o servidor");
+      console.error("Erro no checkout:", error);
+      setError(error.message || "Erro ao finalizar pedido. Tente novamente.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -92,6 +135,22 @@ function Checkout() {
               </h2>
 
               <form onSubmit={handleCheckout}>
+                {error && (
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      backgroundColor: "#fee2e2",
+                      border: "1px solid #fca5a5",
+                      borderRadius: "8px",
+                      marginBottom: "20px",
+                      color: "#dc2626",
+                      fontSize: "14px",
+                    }}
+                  >
+                    {error}
+                  </div>
+                )}
+
                 <div style={{ marginBottom: "16px" }}>
                   <label
                     style={{
@@ -106,7 +165,10 @@ function Checkout() {
                   </label>
                   <input
                     type="text"
+                    name="name"
                     placeholder="Seu nome"
+                    value={formData.name}
+                    onChange={handleInputChange}
                     required
                     style={{ width: "100%" }}
                   />
@@ -126,7 +188,10 @@ function Checkout() {
                   </label>
                   <input
                     type="email"
+                    name="email"
                     placeholder="seu@email.com"
+                    value={formData.email}
+                    onChange={handleInputChange}
                     required
                     style={{ width: "100%" }}
                   />
@@ -146,7 +211,10 @@ function Checkout() {
                   </label>
                   <input
                     type="text"
+                    name="address"
                     placeholder="Rua, número, complemento"
+                    value={formData.address}
+                    onChange={handleInputChange}
                     required
                     style={{ width: "100%" }}
                   />
@@ -174,7 +242,10 @@ function Checkout() {
                     </label>
                     <input
                       type="text"
+                      name="city"
                       placeholder="Sua cidade"
+                      value={formData.city}
+                      onChange={handleInputChange}
                       required
                       style={{ width: "100%" }}
                     />
@@ -194,7 +265,10 @@ function Checkout() {
                     </label>
                     <input
                       type="text"
+                      name="zipCode"
                       placeholder="00000-000"
+                      value={formData.zipCode}
+                      onChange={handleInputChange}
                       required
                       style={{ width: "100%" }}
                     />
@@ -204,16 +278,23 @@ function Checkout() {
                 <button
                   type="submit"
                   className="success"
+                  disabled={loading}
                   style={{
                     width: "100%",
                     padding: "18px",
                     fontSize: "18px",
                     fontWeight: "700",
-                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    boxShadow: "0 8px 24px rgba(16, 185, 129, 0.3)",
+                    background: loading
+                      ? "#94a3b8"
+                      : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    boxShadow: loading
+                      ? "none"
+                      : "0 8px 24px rgba(16, 185, 129, 0.3)",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    opacity: loading ? 0.7 : 1,
                   }}
                 >
-                  Finalizar Pedido →
+                  {loading ? "Processando..." : "Finalizar Pedido →"}
                 </button>
               </form>
             </div>

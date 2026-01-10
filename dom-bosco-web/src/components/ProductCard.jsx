@@ -1,173 +1,244 @@
 import { Link } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+// Helper para normalizar URL da imagem
+function getImageUrl(product) {
+  if (!product) return null;
+
+  let imageField = null;
+
+  // PRIORIDADE 1: Campo "Image" (com I maiúsculo) - campo do banco de dados
+  if (product.Image) {
+    imageField = product.Image;
+  }
+  // PRIORIDADE 2: Campo "imagens" (plural) - caso tenha múltiplas imagens
+  else if (product.imagens) {
+    // Se for array, pega o primeiro elemento
+    if (Array.isArray(product.imagens)) {
+      imageField = product.imagens.length > 0 ? product.imagens[0] : null;
+    }
+    // Se for string, tenta fazer parse (caso seja JSON)
+    else if (typeof product.imagens === 'string') {
+      try {
+        // Tenta fazer parse se for JSON
+        const parsed = JSON.parse(product.imagens);
+        if (Array.isArray(parsed)) {
+          imageField = parsed.length > 0 ? parsed[0] : null;
+        } else {
+          imageField = parsed;
+        }
+      } catch {
+        // Se não for JSON, verifica se é separado por vírgula
+        if (product.imagens.includes(',')) {
+          imageField = product.imagens.split(',')[0].trim();
+        } else {
+          // É uma string simples com o nome do arquivo
+          imageField = product.imagens;
+        }
+      }
+    } else {
+      imageField = product.imagens;
+    }
+  }
+  // PRIORIDADE 3: Campos alternativos (fallback para compatibilidade)
+  else {
+    imageField = product.image || product.image_url || product.imageUrl || product.imagem;
+  }
+  
+  if (!imageField) {
+    return null;
+  }
+
+  // Limpa espaços em branco
+  imageField = String(imageField).trim();
+
+  // Se já é uma URL completa (http:// ou https://)
+  if (imageField.startsWith("http://") || imageField.startsWith("https://")) {
+    return imageField;
+  }
+
+  // Se começa com /, é um caminho relativo do backend
+  if (imageField.startsWith("/")) {
+    return `http://localhost:8000${imageField}`;
+  }
+
+  // Caso contrário, assume que é um nome de arquivo e monta o caminho
+  return `http://localhost:8000/images/products/${imageField}`;
+}
 
 function ProductCard({ product }) {
   const { addToCart } = useCart();
-  const [isHovered, setIsHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const imageUrl = getImageUrl(product);
 
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addToCart(product);
-  };
+  // Debug: Log apenas no primeiro produto
+  useEffect(() => {
+    if (product && product.id === 1) {
+      console.log("🔍 ProductCard - Produto recebido:", product);
+      console.log("🔍 ProductCard - Campo Image:", product.Image);
+      console.log("🔍 ProductCard - URL da imagem gerada:", imageUrl);
+    }
+  }, [product, imageUrl]);
 
   return (
-    <div
-      className="fade-in"
-      style={{
-        height: "100%",
-      }}
+    <Link
+      to={`/products/${product.id}`}
+      style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%" }}
     >
-      <Link
-        to={`/products/${product.id}`}
-        style={{ textDecoration: "none", color: "inherit", display: "block", height: "100%" }}
+      <div
+        className="card fade-in"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          cursor: "pointer",
+        }}
       >
-        <div
-          className="card"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            cursor: "pointer",
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
+      {/* IMAGEM */}
+      <div
+        style={{
+          backgroundColor: imageUrl && !imageError ? "transparent" : "#f1f5f9",
+          padding: imageUrl && !imageError ? 0 : "32px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "240px",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {imageUrl && !imageError ? (
+          <img
+            src={imageUrl}
+            alt={product.name || "Produto"}
+            onError={() => {
+              setImageError(true);
+            }}
+            style={{
+              width: "63%",
+              height: "100%",
+              objectFit: "cover",
+              display: "center",
+            }}
+          />
+        ) : (
           <div
             style={{
-              width: "100%",
-              height: "240px",
-              background: isHovered
-                ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                : "linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)",
+              fontSize: "64px",
+              opacity: 0.3,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "64px",
-              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-              position: "relative",
-              overflow: "hidden",
+              width: "100%",
+              height: "100%",
             }}
           >
-            <div
-              style={{
-                transform: isHovered ? "scale(1.1)" : "scale(1)",
-                transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                filter: isHovered ? "drop-shadow(0 8px 16px rgba(0,0,0,0.2))" : "none",
-              }}
-            >
-              📦
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                padding: "6px 12px",
-                backgroundColor: "rgba(255, 255, 255, 0.9)",
-                backdropFilter: "blur(10px)",
-                borderRadius: "20px",
-                fontSize: "11px",
-                fontWeight: "700",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: "#475569",
-              }}
-            >
-              {product.category}
-            </div>
+            📦
           </div>
-
-          <div className="card-content" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-            <h3
-              style={{
-                fontSize: "22px",
-                fontWeight: "700",
-                marginBottom: "8px",
-                color: "#0f172a",
-                lineHeight: "1.3",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              {product.name}
-            </h3>
-
-            <p
-              style={{
-                fontSize: "15px",
-                color: "#64748b",
-                marginBottom: "20px",
-                lineHeight: "1.6",
-                flex: 1,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {product.description}
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "16px",
-                paddingTop: "16px",
-                borderTop: "1px solid #f1f5f9",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#94a3b8",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    marginBottom: "4px",
-                    fontWeight: "600",
-                  }}
-                >
-                  Preço
-                </div>
-                <span
-                  style={{
-                    fontSize: "28px",
-                    fontWeight: "800",
-                    background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    letterSpacing: "-1px",
-                  }}
-                >
-                  R$ {product.price.toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            <button
-              style={{
-                width: "100%",
-                marginTop: "auto",
-                padding: "14px",
-                fontSize: "15px",
-                fontWeight: "600",
-                background: isHovered
-                  ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                  : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                transition: "all 0.3s ease",
-              }}
-              onClick={handleAddToCart}
-            >
-              Adicionar ao Carrinho
-            </button>
-          </div>
+        )}
+        
+        <div
+          className="featured-badge"
+          style={{
+            position: "absolute",
+            top: "12px",
+            left: "12px",
+            zIndex: 10,
+          }}
+        >
+          Destaque
         </div>
-      </Link>
+      </div>
+
+      {/* CONTEÚDO */}
+      <div style={{ padding: "24px", flexGrow: 1, display: "flex", flexDirection: "column" }}>
+        {product.category && (
+          <span className="badge-category" style={{ marginBottom: "12px" }}>
+            {product.category}
+          </span>
+        )}
+
+        <h3
+          style={{
+            fontSize: "18px",
+            fontWeight: "700",
+            marginBottom: "8px",
+            color: "#1e293b",
+            lineHeight: "1.4",
+            letterSpacing: "-0.2px",
+          }}
+        >
+          {product.name || "Produto sem nome"}
+        </h3>
+
+        <p
+          style={{
+            fontSize: "14px",
+            color: "#64748b",
+            lineHeight: "1.6",
+            marginBottom: "20px",
+            flex: 1,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {product.description || "Sem descrição disponível"}
+        </p>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px",
+            paddingTop: "16px",
+            borderTop: "1px solid #f1f5f9",
+          }}
+        >
+          <span
+            style={{
+              fontSize: "24px",
+              fontWeight: "800",
+              color: "#1e293b",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            R$ {product.price ? product.price.toFixed(2) : "0.00"}
+          </span>
+        </div>
+
+        <button
+          className="purple"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            addToCart(product);
+          }}
+          style={{
+            width: "100%",
+            marginTop: "auto",
+            padding: "12px 20px",
+            fontSize: "14px",
+            fontWeight: "600",
+            borderRadius: "10px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            border: "none",
+            cursor: "pointer",
+            boxShadow: "0 8px 20px rgba(168, 85, 247, 0.35)",
+          }}
+        >
+          <span>🛒</span>
+          <span>Adicionar</span>
+        </button>
+      </div>
     </div>
+    </Link>
   );
 }
 

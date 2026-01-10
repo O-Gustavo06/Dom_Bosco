@@ -34,20 +34,42 @@ function Header() {
         <Link
           to="/"
           style={{
-            fontSize: "28px",
-            fontWeight: "800",
-            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
             textDecoration: "none",
-            letterSpacing: "-0.5px",
             transition: "transform 0.2s ease",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
           onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
         >
-          Dom Bosco
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "24px",
+              fontWeight: "800",
+              color: "white",
+              boxShadow: "0 4px 12px rgba(168, 85, 247, 0.3)",
+            }}
+          >
+            D
+          </div>
+          <span
+            style={{
+              fontSize: "24px",
+              fontWeight: "800",
+              color: "#7c3aed",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            Dom Bosco
+          </span>
         </Link>
 
         <nav style={{ display: "flex", gap: "4px", alignItems: "center" }}>
@@ -57,8 +79,8 @@ function Header() {
               padding: "12px 24px",
               borderRadius: "12px",
               textDecoration: "none",
-              color: isActive("/") ? "#3b82f6" : "#64748b",
-              backgroundColor: isActive("/") ? "rgba(59, 130, 246, 0.1)" : "transparent",
+              color: isActive("/") ? "#7c3aed" : "#64748b",
+              backgroundColor: isActive("/") ? "rgba(124, 58, 237, 0.1)" : "transparent",
               fontWeight: isActive("/") ? "600" : "500",
               fontSize: "15px",
               transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -66,8 +88,8 @@ function Header() {
             }}
             onMouseEnter={(e) => {
               if (!isActive("/")) {
-                e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.05)";
-                e.currentTarget.style.color = "#3b82f6";
+                e.currentTarget.style.backgroundColor = "rgba(124, 58, 237, 0.05)";
+                e.currentTarget.style.color = "#7c3aed";
               }
             }}
             onMouseLeave={(e) => {
@@ -98,8 +120,8 @@ function Header() {
             }}
             onMouseEnter={(e) => {
               if (!isActive("/cart")) {
-                e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.05)";
-                e.currentTarget.style.color = "#3b82f6";
+                e.currentTarget.style.backgroundColor = "rgba(124, 58, 237, 0.05)";
+                e.currentTarget.style.color = "#7c3aed";
               }
             }}
             onMouseLeave={(e) => {
@@ -147,8 +169,8 @@ function Header() {
             }}
             onMouseEnter={(e) => {
               if (!isActive("/login")) {
-                e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.05)";
-                e.currentTarget.style.color = "#3b82f6";
+                e.currentTarget.style.backgroundColor = "rgba(124, 58, 237, 0.05)";
+                e.currentTarget.style.color = "#7c3aed";
               }
             }}
             onMouseLeave={(e) => {

@@ -11,24 +11,30 @@ class Product
         $this->pdo = Database::connect();
     }
 
-    /**
-     * Retorna todos os produtos ativos
-     */
     public function getAll(): array
     {
+        $baseImageUrl = 'http://localhost:8000/images/products/';
+
         $sql = "
-            SELECT 
+            SELECT
                 p.id,
                 p.name,
                 p.description,
                 p.price,
                 p.stock,
                 p.active,
-                c.name AS category
+                COALESCE(
+                    CASE 
+                        WHEN p.image IS NOT NULL AND p.image != '' 
+                        THEN '{$baseImageUrl}' || p.image
+                        ELSE '{$baseImageUrl}default.png'
+                    END,
+                '{$baseImageUrl}default.png') AS image,
+                COALESCE(c.name, 'Sem categoria') AS category
             FROM products p
-            JOIN categories c ON c.id = p.category_id
+            LEFT JOIN categories c ON c.id = p.category_id
             WHERE p.active = 1
-            ORDER BY p.name
+            ORDER BY p.id DESC
         ";
 
         return $this->pdo
@@ -36,22 +42,28 @@ class Product
             ->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Retorna um produto pelo ID
-     */
     public function getById(int $id): ?array
     {
+        $baseImageUrl = 'http://localhost:8000/images/products/';
+
         $sql = "
-            SELECT 
+            SELECT
                 p.id,
                 p.name,
                 p.description,
                 p.price,
                 p.stock,
                 p.active,
-                c.name AS category
+                COALESCE(
+                    CASE 
+                        WHEN p.image IS NOT NULL AND p.image != '' 
+                        THEN '{$baseImageUrl}' || p.image
+                        ELSE '{$baseImageUrl}default.png'
+                    END,
+                '{$baseImageUrl}default.png') AS image,
+                COALESCE(c.name, 'Sem categoria') AS category
             FROM products p
-            JOIN categories c ON c.id = p.category_id
+            LEFT JOIN categories c ON c.id = p.category_id
             WHERE p.id = :id
             LIMIT 1
         ";
