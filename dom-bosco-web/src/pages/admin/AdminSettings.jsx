@@ -1,367 +1,238 @@
-import { useState } from "react";
-import { useTheme } from "../../contexts/ThemeContext";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
-function AdminSettings() {
-  const { isDark, toggleTheme } = useTheme();
+export default function AdminSettings() {
+  const { token } = useAuth();
   const [settings, setSettings] = useState({
-    storeName: "Dom Bosco",
-    storeEmail: "contato@dombosco.com.br",
-    phone: "(11) 1234-5678",
-    address: "Rua Dom Bosco, 123",
-    currency: "BRL",
+    store_name: "",
+    store_description: "",
+    store_email: "",
+    store_phone: "",
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setSettings((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  useEffect(() => {
+    fetchSettings();
+  }, [token]);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setSuccess("");
-
+  const fetchSettings = async () => {
     try {
-      // Simulação de salvamento - na prática você enviaria para o backend
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setSuccess("✅ Configurações salvas com sucesso!");
-      setTimeout(() => setSuccess(""), 3000);
+      setLoading(true);
+      const response = await fetch("http://localhost:8000/api/settings", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao buscar configurações");
+      }
+
+      if (data.settings) {
+        setSettings(data.settings);
+      }
     } catch (err) {
-      console.error("Erro ao salvar configurações:", err);
+      console.error("Erro ao buscar configurações:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setSettings({
+      ...settings,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch("http://localhost:8000/api/settings", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(settings),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao salvar configurações");
+      }
+
+      setSuccess("✅ Configurações salvas com sucesso!");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(`❌ ${err.message}`);
+      console.error("Erro ao salvar configurações:", err);
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: "40px", textAlign: "center" }}>Carregando configurações...</div>;
+  }
+
   return (
-    <div>
-      <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ color: "var(--text-primary)", marginBottom: "8px", fontSize: "28px" }}>
-          ⚙️ Configurações
-        </h1>
-        <p style={{ color: "var(--text-secondary)" }}>
-          Controle as configurações da loja
-        </p>
-      </div>
+    <div style={{ padding: "40px 24px", maxWidth: "600px", margin: "0 auto" }}>
+      <h1 style={{ color: "var(--text-primary)", marginBottom: "32px", fontSize: "28px" }}>
+        ⚙️ Configurações
+      </h1>
+
+      {error && (
+        <div style={{
+          backgroundColor: "#ffebee",
+          color: "#c62828",
+          padding: "16px",
+          borderRadius: "8px",
+          marginBottom: "16px",
+        }}>
+          {error}
+        </div>
+      )}
 
       {success && (
-        <div
-          style={{
-            backgroundColor: isDark ? "#064e3b" : "#dcfce7",
-            borderLeft: "4px solid #16a34a",
-            color: isDark ? "#86efac" : "#15803d",
-            padding: "16px",
-            borderRadius: "8px",
-            marginBottom: "24px",
-          }}
-        >
+        <div style={{
+          backgroundColor: "#e8f5e9",
+          color: "#2e7d32",
+          padding: "16px",
+          borderRadius: "8px",
+          marginBottom: "16px",
+        }}>
           {success}
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
-        {/* Configurações Gerais */}
-        <div
-          style={{
-            backgroundColor: "var(--surface)",
-            padding: "24px",
-            borderRadius: "12px",
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
-          <h2 style={{ color: "var(--text-primary)", marginBottom: "16px", fontSize: "18px", fontWeight: "600" }}>
-            📋 Informações da Loja
-          </h2>
-
-          <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div>
-              <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "500" }}>
-                Nome da Loja
-              </label>
-              <input
-                type="text"
-                name="storeName"
-                value={settings.storeName}
-                onChange={handleChange}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--background)",
-                  color: "var(--text-primary)",
-                  fontFamily: "inherit",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "500" }}>
-                Email da Loja
-              </label>
-              <input
-                type="email"
-                name="storeEmail"
-                value={settings.storeEmail}
-                onChange={handleChange}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--background)",
-                  color: "var(--text-primary)",
-                  fontFamily: "inherit",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "500" }}>
-                Telefone
-              </label>
-              <input
-                type="text"
-                name="phone"
-                value={settings.phone}
-                onChange={handleChange}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--background)",
-                  color: "var(--text-primary)",
-                  fontFamily: "inherit",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "500" }}>
-                Endereço
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={settings.address}
-                onChange={handleChange}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--background)",
-                  color: "var(--text-primary)",
-                  fontFamily: "inherit",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: "12px 16px",
-                backgroundColor: "#6366f1",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: loading ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: "600",
-                transition: "all 0.3s ease",
-                opacity: loading ? 0.6 : 1,
-              }}
-              onMouseEnter={(e) => {
-                if (!loading) e.currentTarget.style.backgroundColor = "#4f46e5";
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) e.currentTarget.style.backgroundColor = "#6366f1";
-              }}
-            >
-              {loading ? "💾 Salvando..." : "💾 Salvar Configurações"}
-            </button>
-          </form>
-        </div>
-
-        {/* Configurações de Aparência */}
-        <div
-          style={{
-            backgroundColor: "var(--surface)",
-            padding: "24px",
-            borderRadius: "12px",
-            boxShadow: "var(--shadow-sm)",
-          }}
-        >
-          <h2 style={{ color: "var(--text-primary)", marginBottom: "16px", fontSize: "18px", fontWeight: "600" }}>
-            🎨 Aparência
-          </h2>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "16px",
-              backgroundColor: "var(--background)",
-              borderRadius: "8px",
-              marginBottom: "16px",
-            }}
-          >
-            <div>
-              <p style={{ color: "var(--text-primary)", fontWeight: "500", marginBottom: "4px" }}>
-                Modo Escuro
-              </p>
-              <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
-                {isDark ? "Ativado" : "Desativado"}
-              </p>
-            </div>
-            <button
-              onClick={toggleTheme}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: isDark ? "#7c3aed" : "#fbbf24",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: "600",
-                transition: "all 0.3s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1";
-              }}
-            >
-              {isDark ? "☀️ Modo Claro" : "🌙 Modo Escuro"}
-            </button>
-          </div>
-
-          <div
-            style={{
-              padding: "16px",
-              backgroundColor: "var(--background)",
-              borderRadius: "8px",
-              marginBottom: "16px",
-            }}
-          >
-            <p style={{ color: "var(--text-primary)", fontWeight: "500", marginBottom: "8px" }}>
-              Moeda
-            </p>
-            <select
-              name="currency"
-              value={settings.currency}
-              onChange={handleChange}
-              style={{
-                width: "100%",
-                padding: "10px",
-                border: "1px solid var(--border-color)",
-                borderRadius: "6px",
-                backgroundColor: "var(--surface)",
-                color: "var(--text-primary)",
-                fontFamily: "inherit",
-                boxSizing: "border-box",
-                cursor: "pointer",
-              }}
-            >
-              <option value="BRL">BRL - Real Brasileiro</option>
-              <option value="USD">USD - Dólar Americano</option>
-              <option value="EUR">EUR - Euro</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Informações do Sistema */}
-      <div
+      <form
+        onSubmit={handleSubmit}
         style={{
           backgroundColor: "var(--surface)",
           padding: "24px",
           borderRadius: "12px",
-          boxShadow: "var(--shadow-sm)",
+          border: "1px solid var(--border-color)",
         }}
       >
-        <h2 style={{ color: "var(--text-primary)", marginBottom: "16px", fontSize: "18px", fontWeight: "600" }}>
-          ℹ️ Informações do Sistema
-        </h2>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-          <div
+        <div style={{ marginBottom: "16px" }}>
+          <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "600" }}>
+            Nome da Loja
+          </label>
+          <input
+            type="text"
+            name="store_name"
+            value={settings.store_name}
+            onChange={handleInputChange}
             style={{
+              width: "100%",
               padding: "12px",
-              backgroundColor: "var(--background)",
+              border: "1px solid var(--border-color)",
               borderRadius: "8px",
+              backgroundColor: "var(--surface-gray)",
+              color: "var(--text-primary)",
+              boxSizing: "border-box",
             }}
-          >
-            <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginBottom: "4px" }}>
-              Versão da API
-            </p>
-            <p style={{ color: "var(--text-primary)", fontWeight: "600", fontSize: "16px" }}>
-              v1.0.0
-            </p>
-          </div>
-
-          <div
-            style={{
-              padding: "12px",
-              backgroundColor: "var(--background)",
-              borderRadius: "8px",
-            }}
-          >
-            <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginBottom: "4px" }}>
-              Versão do Frontend
-            </p>
-            <p style={{ color: "var(--text-primary)", fontWeight: "600", fontSize: "16px" }}>
-              v1.0.0
-            </p>
-          </div>
-
-          <div
-            style={{
-              padding: "12px",
-              backgroundColor: "var(--background)",
-              borderRadius: "8px",
-            }}
-          >
-            <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginBottom: "4px" }}>
-              Banco de Dados
-            </p>
-            <p style={{ color: "var(--text-primary)", fontWeight: "600", fontSize: "16px" }}>
-              SQLite 3
-            </p>
-          </div>
-
-          <div
-            style={{
-              padding: "12px",
-              backgroundColor: "var(--background)",
-              borderRadius: "8px",
-            }}
-          >
-            <p style={{ color: "var(--text-secondary)", fontSize: "12px", marginBottom: "4px" }}>
-              Status
-            </p>
-            <p style={{ color: "#16a34a", fontWeight: "600", fontSize: "16px" }}>
-              ✅ Online
-            </p>
-          </div>
+          />
         </div>
-      </div>
+
+        <div style={{ marginBottom: "16px" }}>
+          <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "600" }}>
+            Descrição da Loja
+          </label>
+          <textarea
+            name="store_description"
+            value={settings.store_description}
+            onChange={handleInputChange}
+            style={{
+              width: "100%",
+              padding: "12px",
+              border: "1px solid var(--border-color)",
+              borderRadius: "8px",
+              backgroundColor: "var(--surface-gray)",
+              color: "var(--text-primary)",
+              boxSizing: "border-box",
+              fontFamily: "inherit",
+              minHeight: "100px",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "16px" }}>
+          <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "600" }}>
+            Email da Loja
+          </label>
+          <input
+            type="email"
+            name="store_email"
+            value={settings.store_email}
+            onChange={handleInputChange}
+            style={{
+              width: "100%",
+              padding: "12px",
+              border: "1px solid var(--border-color)",
+              borderRadius: "8px",
+              backgroundColor: "var(--surface-gray)",
+              color: "var(--text-primary)",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "24px" }}>
+          <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "600" }}>
+            Telefone da Loja
+          </label>
+          <input
+            type="tel"
+            name="store_phone"
+            value={settings.store_phone}
+            onChange={handleInputChange}
+            style={{
+              width: "100%",
+              padding: "12px",
+              border: "1px solid var(--border-color)",
+              borderRadius: "8px",
+              backgroundColor: "var(--surface-gray)",
+              color: "var(--text-primary)",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <button
+          type="submit"
+          style={{
+            width: "100%",
+            padding: "12px",
+            backgroundColor: "#7c3aed",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: "600",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(124, 58, 237, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
+          💾 Salvar Configurações
+        </button>
+      </form>
     </div>
   );
 }
-
-export default AdminSettings;

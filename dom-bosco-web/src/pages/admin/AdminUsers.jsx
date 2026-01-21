@@ -1,27 +1,21 @@
 import { useState, useEffect } from "react";
-import { useTheme } from "../../contexts/ThemeContext";
+import { useAuth } from "../../contexts/AuthContext";
 
-function AdminUsers() {
-  const { isDark } = useTheme();
+export default function AdminUsers() {
+  const { token } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const token = localStorage.getItem("token");
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [token]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      setError("");
       const response = await fetch("http://localhost:8000/api/admin/users", {
-        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
@@ -41,180 +35,81 @@ function AdminUsers() {
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (!confirm(`Tem certeza que deseja deletar o usuário "${name}"?`)) return;
-
-    setError("");
-    setSuccess("");
-
-    try {
-      const response = await fetch(`http://localhost:8000/api/admin/users/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Erro ao deletar usuário");
-      }
-
-      setSuccess(`✅ Usuário deletado com sucesso!`);
-      await fetchUsers();
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      setError(`❌ ${err.message}`);
-      console.error("Erro ao deletar usuário:", err);
-    }
-  };
+  if (loading) {
+    return <div style={{ padding: "40px", textAlign: "center" }}>Carregando usuários...</div>;
+  }
 
   return (
-    <div>
-      <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ color: "var(--text-primary)", marginBottom: "8px", fontSize: "28px" }}>
-          👥 Gerenciar Usuários
-        </h1>
-        <p style={{ color: "var(--text-secondary)" }}>
-          Visualize e controle os usuários do sistema
-        </p>
-      </div>
+    <div style={{ padding: "40px 24px", maxWidth: "1200px", margin: "0 auto" }}>
+      <h1 style={{ color: "var(--text-primary)", marginBottom: "32px", fontSize: "28px" }}>
+        👥 Gerenciar Usuários
+      </h1>
 
       {error && (
-        <div
-          style={{
-            backgroundColor: isDark ? "#4c0519" : "#fee2e2",
-            borderLeft: "4px solid #dc2626",
-            color: isDark ? "#fca5a5" : "#991b1b",
-            padding: "16px",
-            borderRadius: "8px",
-            marginBottom: "24px",
-          }}
-        >
+        <div style={{
+          backgroundColor: "#ffebee",
+          color: "#c62828",
+          padding: "16px",
+          borderRadius: "8px",
+          marginBottom: "16px",
+        }}>
           {error}
         </div>
       )}
 
-      {success && (
-        <div
-          style={{
-            backgroundColor: isDark ? "#064e3b" : "#dcfce7",
-            borderLeft: "4px solid #16a34a",
-            color: isDark ? "#86efac" : "#15803d",
-            padding: "16px",
-            borderRadius: "8px",
-            marginBottom: "24px",
-          }}
-        >
-          {success}
-        </div>
-      )}
-
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>⏳</div>
-          <div style={{ color: "var(--text-secondary)" }}>Carregando usuários...</div>
-        </div>
-      ) : users.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>👤</div>
-          <div style={{ color: "var(--text-secondary)" }}>Nenhum usuário cadastrado</div>
+      {users.length === 0 ? (
+        <div style={{
+          backgroundColor: "var(--surface)",
+          border: "1px solid var(--border-color)",
+          borderRadius: "12px",
+          padding: "40px",
+          textAlign: "center",
+          color: "var(--text-secondary)",
+        }}>
+          Nenhum usuário cadastrado
         </div>
       ) : (
-        <div style={{ overflowX: "auto", boxShadow: "var(--shadow-sm)", borderRadius: "12px" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              backgroundColor: "var(--surface)",
-            }}
-          >
+        <div style={{ overflowX: "auto" }}>
+          <table style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            backgroundColor: "var(--surface)",
+            borderRadius: "12px",
+            overflow: "hidden",
+          }}>
             <thead>
               <tr style={{ backgroundColor: "var(--surface-gray)", borderBottom: "2px solid var(--border-color)" }}>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>
-                  ID
-                </th>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>
-                  Nome
-                </th>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>
-                  Email
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: "var(--text-primary)", fontWeight: "600" }}>
-                  Role
-                </th>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>
-                  Cadastrado em
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: "var(--text-primary)", fontWeight: "600" }}>
-                  Ações
-                </th>
+                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Nome</th>
+                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Email</th>
+                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Função</th>
+                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Cadastro</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {users.map((user, index) => (
                 <tr
                   key={user.id}
                   style={{
                     borderBottom: "1px solid var(--border-color)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--surface-gray)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
+                    backgroundColor: index % 2 === 0 ? "transparent" : "var(--surface-gray)",
                   }}
                 >
-                  <td style={{ padding: "16px", color: "var(--text-secondary)" }}>
-                    #{user.id}
-                  </td>
-                  <td style={{ padding: "16px", color: "var(--text-primary)", fontWeight: "500" }}>
-                    {user.name}
-                  </td>
-                  <td style={{ padding: "16px", color: "var(--text-primary)" }}>
-                    {user.email}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center" }}>
-                    <span
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "20px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        backgroundColor: user.role === "admin" ? "#dbeafe" : "#f3e8ff",
-                        color: user.role === "admin" ? "#0c4a6e" : "#6b21a8",
-                      }}
-                    >
+                  <td style={{ padding: "16px", color: "var(--text-primary)" }}>{user.name}</td>
+                  <td style={{ padding: "16px", color: "var(--text-primary)" }}>{user.email}</td>
+                  <td style={{ padding: "16px" }}>
+                    <span style={{
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      backgroundColor: user.role === "admin" ? "#fecaca" : "#d1fae5",
+                      color: user.role === "admin" ? "#7f1d1d" : "#065f46",
+                    }}>
                       {user.role === "admin" ? "👑 Admin" : "👤 Cliente"}
                     </span>
                   </td>
                   <td style={{ padding: "16px", color: "var(--text-secondary)", fontSize: "14px" }}>
                     {new Date(user.created_at).toLocaleDateString("pt-BR")}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center" }}>
-                    <button
-                      onClick={() => handleDelete(user.id, user.name)}
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor: "#ef4444",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        transition: "all 0.3s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "#dc2626";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "#ef4444";
-                      }}
-                    >
-                      🗑️ Deletar
-                    </button>
                   </td>
                 </tr>
               ))}
@@ -225,5 +120,3 @@ function AdminUsers() {
     </div>
   );
 }
-
-export default AdminUsers;

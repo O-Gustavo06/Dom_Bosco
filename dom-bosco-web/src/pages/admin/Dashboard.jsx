@@ -1,148 +1,140 @@
 import { useState } from "react";
-import { useTheme } from "../../contexts/ThemeContext";
-import { useLocation, Link } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import AdminProducts from "./AdminProducts";
 import AdminUsers from "./AdminUsers";
 import AdminSettings from "./AdminSettings";
 
-function Dashboard() {
-  const { isDark } = useTheme();
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState("produtos");
+export default function Dashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("products");
 
-  const isActive = (tab) => activeTab === tab;
+  if (user?.role !== "admin") {
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        <h2>Acesso Negado</h2>
+        <p>Você não tem permissão para acessar esta página.</p>
+      </div>
+    );
+  }
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "produtos":
-        return <AdminProducts />;
-      case "usuarios":
-        return <AdminUsers />;
-      case "configuracoes":
-        return <AdminSettings />;
-      default:
-        return <AdminProducts />;
-    }
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        backgroundColor: "var(--background)",
-      }}
-    >
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--bg-primary)" }}>
       {/* Sidebar */}
-      <div
+      <aside
         style={{
-          width: "260px",
-          backgroundColor: isDark ? "#0f0f0f" : "#f8f9fa",
+          width: "250px",
+          backgroundColor: "var(--surface)",
           borderRight: "1px solid var(--border-color)",
-          padding: "24px 0",
-          position: "fixed",
-          height: "100vh",
-          overflowY: "auto",
-          top: "80px",
+          padding: "20px",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <div style={{ padding: "0 16px", marginBottom: "32px" }}>
-          <h3 style={{ color: "var(--text-primary)", marginBottom: "16px", fontSize: "14px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Painel de Admin
-          </h3>
+        <div style={{ marginBottom: "32px" }}>
+          <h2 style={{ margin: "0 0 8px 0", color: "var(--text-primary)" }}>
+            🎛️ Admin
+          </h2>
+          <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "12px" }}>
+            Bem-vindo, {user?.name}
+          </p>
         </div>
 
-        <nav style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {[
-            { id: "produtos", label: "📦 Produtos", icon: "📦" },
-            { id: "usuarios", label: "👥 Usuários", icon: "👥" },
-            { id: "configuracoes", label: "⚙️ Configurações", icon: "⚙️" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              style={{
-                padding: "12px 16px",
-                margin: "0 8px",
-                borderRadius: "8px",
-                border: "none",
-                backgroundColor: isActive(item.id)
-                  ? isDark
-                    ? "rgba(168, 85, 247, 0.2)"
-                    : "rgba(168, 85, 247, 0.1)"
-                  : "transparent",
-                color: isActive(item.id) ? "#a855f7" : "var(--text-secondary)",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: isActive(item.id) ? "600" : "500",
-                transition: "all 0.3s ease",
-                textAlign: "left",
-                borderLeft: isActive(item.id) ? "3px solid #a855f7" : "3px solid transparent",
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive(item.id)) {
-                  e.currentTarget.style.backgroundColor = isDark ? "rgba(167, 139, 250, 0.1)" : "rgba(168, 85, 247, 0.05)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive(item.id)) {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Logout Button */}
-        <div style={{ padding: "16px", marginTop: "32px", borderTop: "1px solid var(--border-color)" }}>
-          <Link
-            to="/"
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("user");
-              window.location.href = "/";
-            }}
+        <nav style={{ flex: 1 }}>
+          <button
+            onClick={() => setActiveTab("products")}
             style={{
+              width: "100%",
               padding: "12px 16px",
+              textAlign: "left",
+              backgroundColor: activeTab === "products" ? "#7c3aed" : "transparent",
+              color: activeTab === "products" ? "white" : "var(--text-primary)",
+              border: "none",
               borderRadius: "8px",
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
-              color: "#ef4444",
-              textDecoration: "none",
-              fontSize: "14px",
-              fontWeight: "600",
-              display: "block",
-              textAlign: "center",
               cursor: "pointer",
+              marginBottom: "8px",
+              fontSize: "16px",
+              fontWeight: "600",
               transition: "all 0.3s ease",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
+          >
+            📦 Produtos
+          </button>
+
+          <button
+            onClick={() => setActiveTab("users")}
+            style={{
+              width: "100%",
+              padding: "12px 16px",
+              textAlign: "left",
+              backgroundColor: activeTab === "users" ? "#7c3aed" : "transparent",
+              color: activeTab === "users" ? "white" : "var(--text-primary)",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              marginBottom: "8px",
+              fontSize: "16px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
             }}
           >
-            🚪 Sair do Admin
-          </Link>
-        </div>
-      </div>
+            👥 Usuários
+          </button>
+
+          <button
+            onClick={() => setActiveTab("settings")}
+            style={{
+              width: "100%",
+              padding: "12px 16px",
+              textAlign: "left",
+              backgroundColor: activeTab === "settings" ? "#7c3aed" : "transparent",
+              color: activeTab === "settings" ? "white" : "var(--text-primary)",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              marginBottom: "8px",
+              fontSize: "16px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+            }}
+          >
+            ⚙️ Configurações
+          </button>
+        </nav>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            width: "100%",
+            padding: "12px 16px",
+            backgroundColor: "#ef4444",
+            color: "white",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: "600",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#dc2626"}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ef4444"}
+        >
+          🚪 Sair
+        </button>
+      </aside>
 
       {/* Main Content */}
-      <div
-        style={{
-          marginLeft: "260px",
-          flex: 1,
-          marginTop: "80px",
-          padding: "32px",
-          backgroundColor: "var(--background)",
-        }}
-      >
-        {renderContent()}
-      </div>
+      <main style={{ flex: 1, overflow: "auto" }}>
+        {activeTab === "products" && <AdminProducts />}
+        {activeTab === "users" && <AdminUsers />}
+        {activeTab === "settings" && <AdminSettings />}
+      </main>
     </div>
   );
 }
-
-export default Dashboard;

@@ -1,28 +1,14 @@
 import { Link, useLocation } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 function Header() {
   const location = useLocation();
   const { cart } = useCart();
   const { isDark, toggleTheme } = useTheme();
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, [location]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
-    window.location.href = "/";
-  };
 
   const isActive = (path) => location.pathname === path;
 
@@ -174,97 +160,62 @@ function Header() {
             )}
           </Link>
 
-          {user ? (
-            <div
+          {user && user.role === "admin" && (
+            <Link
+              to="/admin"
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
-                marginLeft: "16px",
-                paddingLeft: "16px",
-                borderLeft: "1px solid var(--border-color)",
+                padding: "12px 24px",
+                borderRadius: "12px",
+                textDecoration: "none",
+                color: isActive("/admin") ? "#f59e0b" : "#64748b",
+                backgroundColor: isActive("/admin") ? "rgba(245, 158, 11, 0.1)" : "transparent",
+                fontWeight: isActive("/admin") ? "600" : "500",
+                fontSize: "15px",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive("/admin")) {
+                  e.currentTarget.style.backgroundColor = "rgba(245, 158, 11, 0.1)";
+                  e.currentTarget.style.color = "#f59e0b";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive("/admin")) {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = "#64748b";
+                }
               }}
             >
-              {user.role === "admin" && (
-                <Link
-                  to="/admin"
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: "8px",
-                    border: "none",
-                    background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    textDecoration: "none",
-                    transition: "all 0.3s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(168, 85, 247, 0.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
-                  }}
-                >
-                  ⚙️ Admin
-                </Link>
-              )}
+              ⚙️ Admin
+            </Link>
+          )}
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-end",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "13px",
-                    color: "var(--text-secondary)",
-                    fontWeight: "500",
-                  }}
-                >
-                  Bem-vindo!
-                </span>
-                <span
-                  style={{
-                    fontSize: "15px",
-                    fontWeight: "700",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {user.name}
-                </span>
-              </div>
-
-              <button
-                onClick={handleLogout}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  transition: "all 0.3s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(239, 68, 68, 0.4)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              >
-                Sair
-              </button>
-            </div>
+          {user ? (
+            <button
+              onClick={() => {
+                logout();
+                window.location.href = "/";
+              }}
+              style={{
+                padding: "12px 16px",
+                borderRadius: "12px",
+                border: "none",
+                backgroundColor: "#ef4444",
+                color: "white",
+                fontWeight: "600",
+                fontSize: "15px",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#dc2626";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#ef4444";
+              }}
+            >
+              🚪 Sair
+            </button>
           ) : (
             <Link
               to="/login"
@@ -298,13 +249,12 @@ function Header() {
           <button
             onClick={toggleTheme}
             style={{
-              padding: "10px 16px",
-              borderRadius: "12px",
-              border: "1px solid var(--border-color)",
-              background: "var(--surface-gray)",
-              color: "var(--text-primary)",
+              backgroundColor: "var(--surface-gray)",
+              border: "none",
+              borderRadius: "8px",
+              width: "44px",
+              height: "44px",
               cursor: "pointer",
-              fontSize: "20px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -330,4 +280,3 @@ function Header() {
 }
 
 export default Header;
-

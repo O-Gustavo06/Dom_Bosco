@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { useTheme } from "../../contexts/ThemeContext";
+import { useAuth } from "../../contexts/AuthContext";
 
-function AdminProducts() {
-  const { isDark } = useTheme();
+export default function AdminProducts() {
+  const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
@@ -18,21 +19,21 @@ function AdminProducts() {
     active: 1,
   });
 
-  const token = localStorage.getItem("token");
+  const [showImageManager, setShowImageManager] = useState(false);
+  const [selectedProductForImages, setSelectedProductForImages] = useState(null);
+  const [productImages, setProductImages] = useState([]);
+  const [loadingImages, setLoadingImages] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  // Fetch products
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [token]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      setError("");
       const response = await fetch("http://localhost:8000/api/admin/products", {
-        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
@@ -50,6 +51,113 @@ function AdminProducts() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchProductImages = async (productId) => {
+    try {
+      setLoadingImages(true);
+      const response = await fetch(`http://localhost:8000/api/admin/products/${productId}/images`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao buscar imagens");
+      }
+
+      setProductImages(data.images || []);
+    } catch (err) {
+      console.error("Erro ao buscar imagens:", err);
+      setProductImages([]);
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setError("");
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const formDataUpload = new FormData();
+        formDataUpload.append("image", files[i]);
+        formDataUpload.append("product_id", selectedProductForImages.id);
+
+        const response = await fetch("http://localhost:8000/api/admin/images/upload", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+          body: formDataUpload,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Erro ao fazer upload da imagem");
+        }
+      }
+
+      setSuccess(`✅ ${files.length} imagem(ns) enviada(s) com sucesso!`);
+      await fetchProductImages(selectedProductForImages.id);
+      e.target.value = "";
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(`❌ ${err.message}`);
+      console.error("Erro ao fazer upload:", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async (filename) => {
+    if (!confirm(`Tem certeza que deseja deletar "${filename}"?`)) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/admin/images/${selectedProductForImages.id}/${encodeURIComponent(filename)}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao deletar imagem");
+      }
+
+      setSuccess("✅ Imagem deletada com sucesso!");
+      await fetchProductImages(selectedProductForImages.id);
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(`❌ ${err.message}`);
+      console.error("Erro ao deletar imagem:", err);
+    }
+  };
+
+  const openImageManager = (product) => {
+    setSelectedProductForImages(product);
+    setShowImageManager(true);
+    fetchProductImages(product.id);
+  };
+
+  const closeImageManager = () => {
+    setShowImageManager(false);
+    setSelectedProductForImages(null);
+    setProductImages([]);
+    setError("");
+    setSuccess("");
   };
 
   const handleInputChange = (e) => {
@@ -158,442 +266,505 @@ function AdminProducts() {
     setShowForm(false);
   };
 
+  if (loading) {
+    return <div style={{ padding: "40px", textAlign: "center" }}>Carregando produtos...</div>;
+  }
+
   return (
-    <div>
+    <div style={{ padding: "40px 24px", maxWidth: "1200px", margin: "0 auto" }}>
       <div style={{ marginBottom: "32px" }}>
         <h1 style={{ color: "var(--text-primary)", marginBottom: "8px", fontSize: "28px" }}>
           📦 Gerenciar Produtos
         </h1>
-        <p style={{ color: "var(--text-secondary)" }}>
-          Adicione, edite ou delete produtos do catálogo
+        <p style={{ color: "var(--text-secondary)", margin: 0 }}>
+          Total: {products.length} produtos
         </p>
       </div>
 
       {error && (
-        <div
-          style={{
-            backgroundColor: isDark ? "#4c0519" : "#fee2e2",
-            borderLeft: "4px solid #dc2626",
-            color: isDark ? "#fca5a5" : "#991b1b",
-            padding: "16px",
-            borderRadius: "8px",
-            marginBottom: "24px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
-        >
-          <span>⚠️</span>
-          <div>{error}</div>
+        <div style={{
+          backgroundColor: "#ffebee",
+          color: "#c62828",
+          padding: "16px",
+          borderRadius: "8px",
+          marginBottom: "16px",
+          border: "1px solid #ef5350",
+        }}>
+          {error}
         </div>
       )}
 
       {success && (
-        <div
-          style={{
-            backgroundColor: isDark ? "#064e3b" : "#dcfce7",
-            borderLeft: "4px solid #16a34a",
-            color: isDark ? "#86efac" : "#15803d",
-            padding: "16px",
-            borderRadius: "8px",
-            marginBottom: "24px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
-        >
-          <span>✅</span>
-          <div>{success}</div>
+        <div style={{
+          backgroundColor: "#e8f5e9",
+          color: "#2e7d32",
+          padding: "16px",
+          borderRadius: "8px",
+          marginBottom: "16px",
+          border: "1px solid #4caf50",
+        }}>
+          {success}
         </div>
       )}
 
       <button
-        onClick={() => (showForm ? resetForm() : setShowForm(true))}
+        onClick={() => setShowForm(!showForm)}
         style={{
           padding: "12px 24px",
-          backgroundColor: showForm ? "#ef4444" : "#3b82f6",
+          backgroundColor: showForm ? "#64748b" : "#6366f1",
           color: "white",
           border: "none",
-          borderRadius: "8px",
+          borderRadius: "10px",
           cursor: "pointer",
+          fontSize: "16px",
           fontWeight: "600",
           marginBottom: "24px",
           transition: "all 0.3s ease",
-          fontSize: "14px",
+          boxShadow: "0 2px 8px rgba(99, 102, 241, 0.2)",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.4)";
+          e.currentTarget.style.boxShadow = showForm ? "0 4px 12px rgba(100, 116, 139, 0.3)" : "0 4px 12px rgba(99, 102, 241, 0.4)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
+          e.currentTarget.style.boxShadow = "0 2px 8px rgba(99, 102, 241, 0.2)";
         }}
       >
-        {showForm ? "✕ Cancelar" : "+ Novo Produto"}
+        {showForm ? "✕ Cancelar" : "➕ Novo Produto"}
       </button>
 
       {showForm && (
-        <div
+        <form
+          onSubmit={handleSubmit}
           style={{
-            background: isDark
-              ? "linear-gradient(135deg, #262626 0%, #1a1a1a 100%)"
-              : "#ffffff",
-            border: isDark ? "1px solid rgba(167, 139, 250, 0.15)" : "1px solid #e5e7eb",
+            backgroundColor: "var(--surface)",
+            padding: "24px",
             borderRadius: "12px",
-            padding: "32px",
             marginBottom: "32px",
-            boxShadow: "var(--shadow-sm)",
+            border: "1px solid var(--border-color)",
           }}
         >
-          <h2 style={{ color: "var(--text-primary)", marginBottom: "24px", fontSize: "20px" }}>
-            {editingId ? "✏️ Editar Produto" : "➕ Novo Produto"}
-          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "16px", marginBottom: "16px" }}>
+            <input
+              type="text"
+              name="name"
+              placeholder="Nome do Produto *"
+              value={formData.name}
+              onChange={handleInputChange}
+              style={{
+                padding: "12px",
+                border: "1px solid var(--border-color)",
+                borderRadius: "8px",
+                backgroundColor: "var(--surface-gray)",
+                color: "var(--text-primary)",
+              }}
+              required
+            />
+            <input
+              type="number"
+              name="price"
+              placeholder="Preço *"
+              value={formData.price}
+              onChange={handleInputChange}
+              style={{
+                padding: "12px",
+                border: "1px solid var(--border-color)",
+                borderRadius: "8px",
+                backgroundColor: "var(--surface-gray)",
+                color: "var(--text-primary)",
+              }}
+              required
+            />
+            <input
+              type="number"
+              name="stock"
+              placeholder="Estoque *"
+              value={formData.stock}
+              onChange={handleInputChange}
+              style={{
+                padding: "12px",
+                border: "1px solid var(--border-color)",
+                borderRadius: "8px",
+                backgroundColor: "var(--surface-gray)",
+                color: "var(--text-primary)",
+              }}
+              required
+            />
+            <input
+              type="number"
+              name="category_id"
+              placeholder="ID da Categoria *"
+              value={formData.category_id}
+              onChange={handleInputChange}
+              style={{
+                padding: "12px",
+                border: "1px solid var(--border-color)",
+                borderRadius: "8px",
+                backgroundColor: "var(--surface-gray)",
+                color: "var(--text-primary)",
+              }}
+              required
+            />
+          </div>
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-              <div>
-                <label style={{ color: "var(--text-secondary)", display: "block", marginBottom: "8px", fontWeight: "500" }}>
-                  Nome *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Ex: Caderno Universitário"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border-color)",
-                    backgroundColor: "var(--surface-gray)",
-                    color: "var(--text-primary)",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                  }}
-                  required
-                />
-              </div>
+          <textarea
+            name="description"
+            placeholder="Descrição"
+            value={formData.description}
+            onChange={handleInputChange}
+            style={{
+              width: "100%",
+              padding: "12px",
+              border: "1px solid var(--border-color)",
+              borderRadius: "8px",
+              backgroundColor: "var(--surface-gray)",
+              color: "var(--text-primary)",
+              marginBottom: "16px",
+              fontFamily: "inherit",
+              minHeight: "100px",
+            }}
+          />
 
-              <div>
-                <label style={{ color: "var(--text-secondary)", display: "block", marginBottom: "8px", fontWeight: "500" }}>
-                  Preço (R$) *
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  placeholder="Ex: 29.90"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border-color)",
-                    backgroundColor: "var(--surface-gray)",
-                    color: "var(--text-primary)",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                  }}
-                  required
-                />
-              </div>
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              name="active"
+              checked={formData.active === 1}
+              onChange={handleInputChange}
+              style={{ width: "18px", height: "18px", cursor: "pointer" }}
+            />
+            <span style={{ color: "var(--text-primary)" }}>Produto Ativo</span>
+          </label>
 
-              <div>
-                <label style={{ color: "var(--text-secondary)", display: "block", marginBottom: "8px", fontWeight: "500" }}>
-                  Estoque (Qtd) *
-                </label>
-                <input
-                  type="number"
-                  name="stock"
-                  value={formData.stock}
-                  onChange={handleInputChange}
-                  placeholder="Ex: 100"
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border-color)",
-                    backgroundColor: "var(--surface-gray)",
-                    color: "var(--text-primary)",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                  }}
-                  required
-                />
-              </div>
+          <button
+            type="submit"
+            style={{
+              padding: "12px 24px",
+              backgroundColor: "#7c3aed",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "16px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(124, 58, 237, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            {editingId ? "💾 Atualizar" : "➕ Criar"}
+          </button>
+        </form>
+      )}
 
-              <div>
-                <label style={{ color: "var(--text-secondary)", display: "block", marginBottom: "8px", fontWeight: "500" }}>
-                  Categoria *
-                </label>
-                <select
-                  name="category_id"
-                  value={formData.category_id}
-                  onChange={handleInputChange}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border-color)",
-                    backgroundColor: "var(--surface-gray)",
-                    color: "var(--text-primary)",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                  }}
-                  required
-                >
-                  <option value="">Selecione uma categoria</option>
-                  <option value="1">Cadernos</option>
-                  <option value="2">Canetas e Lápis</option>
-                  <option value="3">Papéis</option>
-                  <option value="4">Mochilas</option>
-                  <option value="5">Outros</option>
-                </select>
-              </div>
-
-              <div style={{ gridColumn: "1 / -1" }}>
-                <label style={{ color: "var(--text-secondary)", display: "block", marginBottom: "8px", fontWeight: "500" }}>
-                  Descrição
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Descreva o produto..."
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border-color)",
-                    backgroundColor: "var(--surface-gray)",
-                    color: "var(--text-primary)",
-                    fontSize: "14px",
-                    minHeight: "100px",
-                    fontFamily: "inherit",
-                    resize: "vertical",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <input
-                  type="checkbox"
-                  name="active"
-                  checked={formData.active === 1}
-                  onChange={handleInputChange}
-                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                />
-                <label style={{ color: "var(--text-secondary)", cursor: "pointer", margin: 0, fontWeight: "500" }}>
-                  ✓ Ativo
-                </label>
+      <div style={{ display: "grid", gap: "16px" }}>
+        {products.map((product) => (
+          <div
+            key={product.id}
+            style={{
+              backgroundColor: "var(--surface)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "12px",
+              padding: "20px",
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
+              gap: "20px",
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <h3 style={{ margin: "0 0 8px 0", color: "var(--text-primary)" }}>
+                {product.name}
+              </h3>
+              <p style={{ margin: "0 0 12px 0", color: "var(--text-secondary)", fontSize: "14px" }}>
+                {product.description}
+              </p>
+              <div style={{ display: "flex", gap: "24px", fontSize: "14px", color: "var(--text-secondary)" }}>
+                <span>💰 R$ {parseFloat(product.price).toFixed(2)}</span>
+                <span>📦 {product.stock} em estoque</span>
+                <span>{product.active ? "✅ Ativo" : "❌ Desativado"}</span>
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+            <div style={{ display: "flex", gap: "8px", flexDirection: "column" }}>
               <button
-                type="submit"
+                onClick={() => handleEdit(product)}
                 style={{
-                  padding: "12px 24px",
+                  padding: "8px 16px",
                   backgroundColor: "#3b82f6",
                   color: "white",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   cursor: "pointer",
+                  fontSize: "14px",
                   fontWeight: "600",
                   transition: "all 0.3s ease",
-                  fontSize: "14px",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#2563eb";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#3b82f6";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#3b82f6"}
               >
-                {editingId ? "💾 Atualizar" : "➕ Criar"} Produto
+                ✏️ Editar
               </button>
+
               <button
-                type="button"
-                onClick={resetForm}
+                onClick={() => openImageManager(product)}
                 style={{
-                  padding: "12px 24px",
-                  backgroundColor: "var(--surface-gray)",
-                  color: "var(--text-secondary)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  backgroundColor: "#10b981",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
                   cursor: "pointer",
+                  fontSize: "14px",
                   fontWeight: "600",
                   transition: "all 0.3s ease",
-                  fontSize: "14px",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--surface-hover)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--surface-gray)";
-                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#059669"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#10b981"}
               >
-                Limpar
+                🖼️ Imagens
+              </button>
+
+              <button
+                onClick={() => handleDelete(product.id, product.name)}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#ef4444",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#dc2626"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ef4444"}
+              >
+                🗑️ Deletar
               </button>
             </div>
-          </form>
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
 
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>⏳</div>
-          <div style={{ color: "var(--text-secondary)", fontSize: "16px" }}>Carregando produtos...</div>
-        </div>
-      ) : products.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div style={{ fontSize: "48px", marginBottom: "16px" }}>📭</div>
-          <div style={{ color: "var(--text-secondary)", fontSize: "16px" }}>Nenhum produto cadastrado ainda</div>
-        </div>
-      ) : (
-        <div style={{ overflowX: "auto", boxShadow: "var(--shadow-sm)", borderRadius: "12px" }}>
-          <table
+      {showImageManager && selectedProductForImages && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "20px",
+          }}
+          onClick={closeImageManager}
+        >
+          <div
             style={{
-              width: "100%",
-              borderCollapse: "collapse",
               backgroundColor: "var(--surface)",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "600px",
+              width: "100%",
+              maxHeight: "80vh",
+              overflowY: "auto",
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <thead>
-              <tr style={{ backgroundColor: "var(--surface-gray)", borderBottom: "2px solid var(--border-color)" }}>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600", fontSize: "14px" }}>
-                  ID
-                </th>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600", fontSize: "14px" }}>
-                  Nome
-                </th>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600", fontSize: "14px" }}>
-                  Preço
-                </th>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600", fontSize: "14px" }}>
-                  Estoque
-                </th>
-                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600", fontSize: "14px" }}>
-                  Categoria
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: "var(--text-primary)", fontWeight: "600", fontSize: "14px" }}>
-                  Status
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: "var(--text-primary)", fontWeight: "600", fontSize: "14px" }}>
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr
-                  key={product.id}
-                  style={{
-                    borderBottom: "1px solid var(--border-color)",
-                    transition: "all 0.3s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--surface-gray)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
-                >
-                  <td style={{ padding: "16px", color: "var(--text-secondary)", fontSize: "14px" }}>
-                    #{product.id}
-                  </td>
-                  <td style={{ padding: "16px", color: "var(--text-primary)", fontWeight: "500", fontSize: "14px" }}>
-                    {product.name}
-                  </td>
-                  <td style={{ padding: "16px", color: "var(--text-primary)", fontSize: "14px", fontWeight: "600" }}>
-                    R$ {parseFloat(product.price).toFixed(2)}
-                  </td>
-                  <td style={{ padding: "16px", color: "var(--text-primary)", fontSize: "14px" }}>
-                    {product.stock} un.
-                  </td>
-                  <td style={{ padding: "16px", color: "var(--text-secondary)", fontSize: "14px" }}>
-                    {["", "Cadernos", "Canetas", "Papéis", "Mochilas", "Outros"][product.category_id]}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center", fontSize: "14px" }}>
-                    <span
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h2 style={{ margin: 0, color: "var(--text-primary)" }}>
+                🖼️ {selectedProductForImages.name}
+              </h2>
+              <button
+                onClick={closeImageManager}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "none",
+                  fontSize: "24px",
+                  cursor: "pointer",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {error && (
+              <div style={{
+                backgroundColor: "#ffebee",
+                color: "#c62828",
+                padding: "12px",
+                borderRadius: "8px",
+                marginBottom: "16px",
+                fontSize: "14px",
+              }}>
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div style={{
+                backgroundColor: "#e8f5e9",
+                color: "#2e7d32",
+                padding: "12px",
+                borderRadius: "8px",
+                marginBottom: "16px",
+                fontSize: "14px",
+              }}>
+                {success}
+              </div>
+            )}
+
+            <div
+              style={{
+                border: "2px dashed var(--border-color)",
+                borderRadius: "8px",
+                padding: "24px",
+                textAlign: "center",
+                marginBottom: "20px",
+                cursor: "pointer",
+                backgroundColor: "var(--surface-gray)",
+                transition: "all 0.3s ease",
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.currentTarget.style.borderColor = "#7c3aed";
+                e.currentTarget.style.backgroundColor = "rgba(124, 58, 237, 0.1)";
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-color)";
+                e.currentTarget.style.backgroundColor = "var(--surface-gray)";
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.style.borderColor = "var(--border-color)";
+                e.currentTarget.style.backgroundColor = "var(--surface-gray)";
+                const files = e.dataTransfer.files;
+                if (document.getElementById("imageInput")) {
+                  document.getElementById("imageInput").files = files;
+                  handleImageUpload({ target: { files } });
+                }
+              }}
+            >
+              <input
+                id="imageInput"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{ display: "none" }}
+              />
+              <label
+                htmlFor="imageInput"
+                style={{
+                  cursor: "pointer",
+                  display: "block",
+                }}
+              >
+                <div style={{ color: "var(--text-primary)", fontWeight: "600", marginBottom: "4px" }}>
+                  {uploading ? "Enviando..." : "Clique para selecionar ou arraste imagens"}
+                </div>
+                <div style={{ color: "var(--text-secondary)", fontSize: "12px" }}>
+                  PNG, JPG, GIF ou WebP (máx. 5MB por arquivo)
+                </div>
+              </label>
+            </div>
+
+            <div>
+              <h3 style={{ color: "var(--text-primary)", marginBottom: "12px", fontSize: "16px" }}>
+                Imagens do Produto ({productImages.length})
+              </h3>
+
+              {loadingImages ? (
+                <div style={{ textAlign: "center", padding: "20px", color: "var(--text-secondary)" }}>
+                  Carregando imagens...
+                </div>
+              ) : productImages.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "20px", color: "var(--text-secondary)" }}>
+                  Nenhuma imagem ainda. Selecione uma acima.
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "12px" }}>
+                  {productImages.map((image) => (
+                    <div
+                      key={image.filename}
                       style={{
-                        padding: "6px 12px",
-                        borderRadius: "20px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        backgroundColor: product.active ? "#dcfce7" : "#fee2e2",
-                        color: product.active ? "#15803d" : "#991b1b",
+                        position: "relative",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        border: "1px solid var(--border-color)",
+                        backgroundColor: "var(--surface-gray)",
                       }}
                     >
-                      {product.active ? "✓ Ativo" : "✗ Inativo"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center", fontSize: "14px" }}>
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                      <button
-                        onClick={() => handleEdit(product)}
+                      <img
+                        src={`http://localhost:8000${image.url}`}
+                        alt={image.filename}
                         style={{
-                          padding: "6px 12px",
-                          backgroundColor: "#3b82f6",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          transition: "all 0.3s ease",
+                          width: "100%",
+                          height: "120px",
+                          objectFit: "cover",
+                          display: "block",
                         }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = "#2563eb";
-                          e.currentTarget.style.transform = "scale(1.05)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "#3b82f6";
-                          e.currentTarget.style.transform = "scale(1)";
+                      />
+
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          backgroundColor: "rgba(0, 0, 0, 0.7)",
+                          padding: "4px",
+                          display: "flex",
+                          gap: "4px",
+                          justifyContent: "center",
                         }}
                       >
-                        ✏️ Editar
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product.id, product.name)}
-                        style={{
-                          padding: "6px 12px",
-                          backgroundColor: "#ef4444",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          transition: "all 0.3s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = "#dc2626";
-                          e.currentTarget.style.transform = "scale(1.05)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "#ef4444";
-                          e.currentTarget.style.transform = "scale(1)";
-                        }}
-                      >
-                        🗑️ Deletar
-                      </button>
+                        <button
+                          onClick={() => handleDeleteImage(image.filename)}
+                          title="Deletar imagem"
+                          style={{
+                            padding: "4px 8px",
+                            backgroundColor: "transparent",
+                            color: "white",
+                            border: "1px solid white",
+                            borderRadius: "3px",
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            transition: "all 0.3s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#ef4444";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "transparent";
+                          }}
+                        >
+                          🗑️ Deletar
+                        </button>
+                      </div>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
-export default AdminProducts;
