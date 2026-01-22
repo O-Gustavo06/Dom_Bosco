@@ -1,0 +1,48 @@
+[2026-01-22 02:02:41] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":51,"count":1}
+[2026-01-22 02:02:58] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":0}
+[2026-01-22 02:03:09] [INFO] Tentativa de upload de imagem {"user_id":11,"ip":"::1"}
+[2026-01-22 02:03:09] [INFO] Arquivo salvo com sucesso {"product_id":45,"filename":"prod_6971774da4d7a1.33841845.jpg","size":51226,"path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/prod_6971774da4d7a1.33841845.jpg"}
+[2026-01-22 02:03:09] [INFO] Upload realizado com sucesso {"user_id":11,"product_id":"45","filename":"prod_6971774da4d7a1.33841845.jpg","file_size":51226}
+[2026-01-22 02:03:09] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:03:18] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:03:37] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:05:04] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:05:27] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:07:40] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:11:45] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":1}
+[2026-01-22 02:11:57] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:13:55] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:17:11] [INFO] Imagens listadas com sucesso {"user_id":1,"product_id":52,"count":1}
+[2026-01-22 02:17:53] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":45,"count":1}
+[2026-01-22 02:45:19] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":1}
+[2026-01-22 02:45:32] [INFO] Tentativa de upload de imagem {"user_id":11,"ip":"::1"}
+[2026-01-22 02:45:32] [INFO] Arquivo salvo com sucesso {"product_id":42,"filename":"prod_6971813c6d20b3.90391917.jpg","size":223561,"path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/prod_6971813c6d20b3.90391917.jpg"}
+[2026-01-22 02:45:32] [INFO] Upload realizado com sucesso {"user_id":11,"product_id":"42","filename":"prod_6971813c6d20b3.90391917.jpg","file_size":223561}
+[2026-01-22 02:45:32] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":2}
+[2026-01-22 03:02:15] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":0}
+[2026-01-22 03:02:35] [INFO] Tentativa de upload de imagem {"user_id":11,"ip":"::1"}
+[2026-01-22 03:02:35] [INFO] Arquivo salvo com sucesso {"product_id":40,"filename":"tesoura-escolar-jpg.jpg","size":223561,"path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/tesoura-escolar-jpg.jpg"}
+[2026-01-22 03:02:35] [INFO] Upload realizado com sucesso {"user_id":11,"product_id":"40","filename":"tesoura-escolar-jpg.jpg","file_size":223561,"custom_name":"tesoura-escolar.jpg.jpg"}
+[2026-01-22 03:02:35] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":1}
+[2026-01-22 03:02:43] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":2}
+[2026-01-22 03:02:52] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":1}
+[2026-01-22 03:03:14] [INFO] Tentativa de upload de imagem {"user_id":11,"ip":"::1"}
+[2026-01-22 03:03:14] [INFO] Arquivo salvo com sucesso {"product_id":40,"filename":"notebooke-jpg.jpg","size":51226,"path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/notebooke-jpg.jpg"}
+[2026-01-22 03:03:14] [INFO] Upload realizado com sucesso {"user_id":11,"product_id":"40","filename":"notebooke-jpg.jpg","file_size":51226,"custom_name":"notebooke.jpg.jpg"}
+[2026-01-22 03:03:14] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
+[2026-01-22 03:04:45] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
+[2026-01-22 03:12:57] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
+[2026-01-22 03:13:01] [INFO] Tentativa de deletar imagem {"user_id":11,"product_id":40,"filename":"notebooke-jpg.jpg"}
+[2026-01-22 03:13:01] [INFO] Arquivo físico deletado {"product_id":40,"filename":"notebooke-jpg.jpg","path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/notebooke-jpg.jpg"}
+[2026-01-22 03:13:01] [INFO] Referência da imagem removida do banco {"product_id":40,"filename":"notebooke-jpg.jpg"}
+[2026-01-22 03:13:01] [INFO] Imagem deletada com sucesso {"user_id":11,"product_id":40,"filename":"notebooke-jpg.jpg"}
+[2026-01-22 03:13:01] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":1}
+[2026-01-22 03:13:12] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":1}
+[2026-01-22 03:13:23] [INFO] Tentativa de upload de imagem {"user_id":11,"ip":"::1"}
+[2026-01-22 03:13:23] [INFO] Arquivo salvo com sucesso {"product_id":40,"filename":"notebooke.jpg","size":51226,"path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/notebooke.jpg"}
+[2026-01-22 03:13:23] [INFO] Upload realizado com sucesso {"user_id":11,"product_id":"40","filename":"notebooke.jpg","file_size":51226,"custom_name":"notebooke.jpg"}
+[2026-01-22 03:13:23] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
+[2026-01-22 03:14:35] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
+[2026-01-22 03:14:59] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
+[2026-01-22 03:15:37] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
+[2026-01-22 23:37:55] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}

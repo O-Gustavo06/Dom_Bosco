@@ -14,38 +14,42 @@ class UserController
 
     /**
      * Cadastro de usuário
-     * - Emails @papelaria.com são criados como 'admin'
-     * - Outros emails são criados como 'customer'
+     * - Emails @papelaria.com => admin
+     * - Demais emails => customer
      */
-    public function register()
+    public function register(): void
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        $data     = json_decode($rawInput, true);
 
-        // Validações
-        if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
+        if (
+            empty($data['name']) ||
+            empty($data['email']) ||
+            empty($data['password'])
+        ) {
             http_response_code(400);
-            echo json_encode(['error' => 'Nome, email e senha são obrigatórios']);
+            echo json_encode([
+                'error' => 'Nome, email e senha são obrigatórios'
+            ]);
             return;
         }
 
-        // Validação de email
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
             echo json_encode(['error' => 'Email inválido']);
             return;
         }
 
-        // Validação de senha
         if (strlen($data['password']) < 6) {
             http_response_code(400);
-            echo json_encode(['error' => 'Senha deve ter no mínimo 6 caracteres']);
+            echo json_encode([
+                'error' => 'Senha deve ter no mínimo 6 caracteres'
+            ]);
             return;
         }
 
         $email = strtolower(trim($data['email']));
-
-        // Detecta automaticamente se é admin (email @papelaria.com)
-        $role = str_ends_with($email, '@papelaria.com') ? 'admin' : 'customer';
+        $role  = str_ends_with($email, '@papelaria.com') ? 'admin' : 'customer';
 
         try {
             $userId = $this->user->create(
@@ -58,7 +62,7 @@ class UserController
             http_response_code(201);
             echo json_encode([
                 'message' => 'Usuário criado com sucesso',
-                'user' => [
+                'user'    => [
                     'id'    => $userId,
                     'name'  => $data['name'],
                     'email' => $email,
@@ -67,20 +71,28 @@ class UserController
             ]);
         } catch (Exception $e) {
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode([
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
     /**
-     * Login - Retorna JWT token
+     * Login - Retorna JWT
      */
-    public function login()
+    public function login(): void
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        $data     = json_decode($rawInput, true);
 
-        if (empty($data['email']) || empty($data['password'])) {
+        if (
+            empty($data['email']) ||
+            empty($data['password'])
+        ) {
             http_response_code(400);
-            echo json_encode(['error' => 'Email e senha são obrigatórios']);
+            echo json_encode([
+                'error' => 'Email e senha são obrigatórios'
+            ]);
             return;
         }
 
@@ -91,27 +103,30 @@ class UserController
 
             if (!$user) {
                 http_response_code(401);
-                echo json_encode(['error' => 'Email ou senha inválidos']);
+                echo json_encode([
+                    'error' => 'Email ou senha inválidos'
+                ]);
                 return;
             }
 
-            // Gera JWT token
             $token = JWT::generate([
-                'id' => $user['id'],
-                'name' => $user['name'],
+                'id'    => $user['id'],
+                'name'  => $user['name'],
                 'email' => $user['email'],
-                'role' => $user['role']
+                'role'  => $user['role']
             ]);
 
             http_response_code(200);
             echo json_encode([
                 'message' => 'Login realizado com sucesso',
-                'token' => $token,
-                'user' => $user
+                'token'   => $token,
+                'user'    => $user
             ]);
         } catch (Exception $e) {
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode([
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

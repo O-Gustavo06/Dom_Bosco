@@ -26,7 +26,7 @@ export default function AdminUsers() {
         throw new Error(data.error || "Erro ao buscar usuários");
       }
 
-      setUsers(data.users || []);
+      setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(`❌ ${err.message}`);
       console.error("Erro ao buscar usuários:", err);

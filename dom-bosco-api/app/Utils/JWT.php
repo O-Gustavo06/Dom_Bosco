@@ -3,6 +3,20 @@
 class JWT
 {
     private static string $SECRET = 'sua_chave_secreta_super_segura_2024';
+    private const ALG = 'HS256';
+    private const TOKEN_TTL = 86400; // 24 horas
+
+    private static function logDebug(string $message): void
+    {
+        $logDir = __DIR__ . '/../../storage/logs';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0755, true);
+        }
+
+        $logFile = $logDir . '/jwt_debug.log';
+        $time = date('Y-m-d H:i:s');
+        @file_put_contents($logFile, "[{$time}] {$message}\n", FILE_APPEND | LOCK_EX);
+    }
 
     /**
      * Gera um token JWT
@@ -10,20 +24,19 @@ class JWT
     public static function generate(array $payload): string
     {
         $header = [
-            'alg' => 'HS256',
+            'alg' => self::ALG,
             'typ' => 'JWT'
         ];
 
         $payload['iat'] = time();
-        $payload['exp'] = time() + (24 * 60 * 60); // 24 horas
+        $payload['exp'] = time() + self::TOKEN_TTL;
 
-        $header = self::base64UrlEncode(json_encode($header));
-        $payload = self::base64UrlEncode(json_encode($payload));
-        $signature = self::base64UrlEncode(
-            hash_hmac('sha256', "$header.$payload", self::$SECRET, true)
-        );
+        $encodedHeader  = self::base64UrlEncode(json_encode($header));
+        $encodedPayload = self::base64UrlEncode(json_encode($payload));
 
-        return "$header.$payload.$signature";
+        $signature = self::sign("$encodedHeader.$encodedPayload");
+
+        return "$encodedHeader.$encodedPayload.$signature";
     }
 
     /**
@@ -33,30 +46,39 @@ class JWT
     {
         try {
             $parts = explode('.', $token);
-            
+
             if (count($parts) !== 3) {
+                self::logDebug("verify: token partes inválidas (count=" . count($parts) . ") - token={$token}");
                 return null;
             }
 
             [$header, $payload, $signature] = $parts;
 
-            $newSignature = self::base64UrlEncode(
-                hash_hmac('sha256', "$header.$payload", self::$SECRET, true)
+            $expected = self::sign("$header.$payload");
+
+            if (!hash_equals($expected, $signature)) {
+                self::logDebug("verify: assinatura inválida - expected={$expected} signature={$signature} token={$token}");
+                return null;
+            }
+
+            $decodedPayload = json_decode(
+                self::base64UrlDecode($payload),
+                true
             );
 
-            if ($signature !== $newSignature) {
+            if (!is_array($decodedPayload)) {
+                self::logDebug("verify: payload JSON inválido - payload={$payload} token={$token}");
                 return null;
             }
 
-            $decoded = json_decode(self::base64UrlDecode($payload), true);
-
-            // Verifica expiração
-            if (isset($decoded['exp']) && $decoded['exp'] < time()) {
+            if (isset($decodedPayload['exp']) && $decodedPayload['exp'] < time()) {
+                self::logDebug("verify: token expirado - exp={$decodedPayload['exp']} now=" . time() . " token={$token}");
                 return null;
             }
 
-            return $decoded;
-        } catch (Exception $e) {
+            return $decodedPayload;
+        } catch (Throwable $e) {
+            self::logDebug("verify: exceção - " . $e->getMessage() . " token={$token}");
             return null;
         }
     }
@@ -66,34 +88,67 @@ class JWT
      */
     public static function getTokenFromHeader(): ?string
     {
-        $headers = getallheaders();
-        
-        if (!isset($headers['Authorization'])) {
+        $headers = [];
+
+        if (function_exists('getallheaders')) {
+            foreach (getallheaders() as $k => $v) {
+                $headers[$k] = $v;
+            }
+        }
+
+        $authHeader = null;
+
+        foreach ($headers as $k => $v) {
+            if (strtolower($k) === 'authorization') {
+                $authHeader = $v;
+                break;
+            }
+        }
+
+        if (!$authHeader) {
+            if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+                $authHeader = $_SERVER['HTTP_AUTHORIZATION'];
+            } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+                $authHeader = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+            }
+        }
+
+        if (empty($authHeader)) {
             return null;
         }
 
-        $authHeader = $headers['Authorization'];
-        
-        if (preg_match('/Bearer\s+(\S+)/', $authHeader, $matches)) {
+        if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
             return $matches[1];
         }
 
         return null;
     }
 
-    /**
-     * Codifica em base64 URL safe
-     */
-    private static function base64UrlEncode(string $data): string
+    private static function sign(string $data): string
     {
-        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+        return self::base64UrlEncode(
+            hash_hmac('sha256', $data, self::$SECRET, true)
+        );
     }
 
-    /**
-     * Decodifica base64 URL safe
-     */
+    private static function base64UrlEncode(string $data): string
+    {
+        return rtrim(
+            strtr(base64_encode($data), '+/', '-_'),
+            '='
+        );
+    }
+
     private static function base64UrlDecode(string $data): string
     {
-        return base64_decode(strtr($data, '-_', '+/') . str_repeat('=', 4 - (strlen($data) % 4)));
+        $padding = strlen($data) % 4;
+
+        if ($padding > 0) {
+            $data .= str_repeat('=', 4 - $padding);
+        }
+
+        return base64_decode(
+            strtr($data, '-_', '+/')
+        );
     }
 }

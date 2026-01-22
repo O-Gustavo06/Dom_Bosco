@@ -11,7 +11,10 @@ class Database
             $path = 'C:/xampp/htdocs/Dom_Bosco/BANCO.db';
 
             if (!file_exists($path)) {
-                die('Banco SQLite não encontrado em: ' . $path);
+                http_response_code(500);
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Banco SQLite não encontrado em: ' . $path]);
+                exit;
             }
 
             self::$connection = new PDO("sqlite:$path");

@@ -446,42 +446,56 @@ function ProductDetails() {
 
           <div>
             <div
-              className="badge badge-primary"
               style={{
-                marginBottom: "20px",
-                fontSize: "13px",
-                padding: "8px 18px",
+                marginBottom: "16px",
+                display: "inline-block",
               }}
             >
-              {product.category}
+              <span
+                style={{
+                  background: "#8b5cf6",
+                  color: "white",
+                  fontSize: "12px",
+                  padding: "6px 16px",
+                  borderRadius: "20px",
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                {product.category}
+              </span>
             </div>
 
-            <h1 style={{ marginBottom: "20px", fontSize: "48px" }}>
+            <h1 style={{ 
+              marginBottom: "16px", 
+              fontSize: "42px",
+              fontWeight: "700",
+              color: "var(--text-primary)",
+              lineHeight: "1.2",
+            }}>
               {product.name}
             </h1>
 
             <p
               style={{
-                fontSize: "18px",
+                fontSize: "16px",
                 color: "#64748b",
-                lineHeight: "1.8",
-                marginBottom: "40px",
+                lineHeight: "1.6",
+                marginBottom: "28px",
               }}
             >
               {product.description}
             </p>
 
+            {/* Preço Grande e Limpo */}
             <div
-              className="card"
               style={{
-                background: isDark 
-                  ? "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)"
-                  : "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
-                border: isDark 
-                  ? "1px solid rgba(167, 139, 250, 0.15)"
-                  : "2px solid #e2e8f0",
-                padding: "32px",
-                marginBottom: "32px",
+                background: "var(--surface)",
+                border: "2px solid var(--border-color)",
+                borderRadius: "12px",
+                padding: "28px",
+                marginBottom: "20px",
               }}
             >
               <div
@@ -489,7 +503,7 @@ function ProductDetails() {
                   fontSize: "12px",
                   textTransform: "uppercase",
                   letterSpacing: "1px",
-                  color: "var(--text-muted)",
+                  color: "#64748b",
                   marginBottom: "8px",
                   fontWeight: "600",
                 }}
@@ -498,53 +512,110 @@ function ProductDetails() {
               </div>
               <div
                 style={{
-                  fontSize: "56px",
-                  fontWeight: "800",
-                  background: isDark
-                    ? "linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%)"
-                    : "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  marginBottom: "24px",
-                  letterSpacing: "-2px",
+                  fontSize: "48px",
+                  fontWeight: "900",
+                  color: "#8b5cf6",
+                  marginBottom: "20px",
+                  letterSpacing: "-1px",
                 }}
               >
-                R$ {product.price.toFixed(2)}
+                R$ {parseFloat(product.price).toFixed(2)}
               </div>
 
               <div
                 style={{
                   display: "flex",
-                  gap: "32px",
-                  fontSize: "15px",
-                  paddingTop: "24px",
-                  borderTop: "1px solid var(--border-color)",
+                  gap: "16px",
+                  paddingTop: "20px",
+                  borderTop: "2px solid var(--border-color)",
                 }}
               >
-                <div>
-                  <span style={{ color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>
+                <div style={{
+                  flex: 1,
+                  padding: "16px",
+                  background: "var(--surface-gray)",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                }}>
+                  <div style={{ 
+                    color: "#64748b", 
+                    fontSize: "12px",
+                    marginBottom: "6px",
+                    fontWeight: "600",
+                  }}>
                     Estoque
-                  </span>
-                  <strong style={{ color: "var(--text-primary)", fontSize: "18px" }}>
-                    {product.stock} unidades
-                  </strong>
+                  </div>
+                  <div style={{ 
+                    color: product.stock > 10 ? "#10b981" : product.stock > 0 ? "#f59e0b" : "#ef4444", 
+                    fontSize: "24px",
+                    fontWeight: "700",
+                  }}>
+                    {product.stock}
+                  </div>
+                </div>
+                
+                <div style={{
+                  flex: 1,
+                  padding: "16px",
+                  background: "var(--surface-gray)",
+                  borderRadius: "8px",
+                  textAlign: "center",
+                }}>
+                  <div style={{ 
+                    color: "#64748b", 
+                    fontSize: "12px",
+                    marginBottom: "6px",
+                    fontWeight: "600",
+                  }}>
+                    Status
+                  </div>
+                  <div style={{ 
+                    color: product.stock > 0 ? "#10b981" : "#ef4444", 
+                    fontSize: "14px",
+                    fontWeight: "700",
+                  }}>
+                    {product.stock > 0 ? "Disponível" : "Esgotado"}
+                  </div>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => addToCart(product)}
+              disabled={product.stock === 0}
               style={{
                 width: "100%",
                 padding: "18px",
-                fontSize: "18px",
+                fontSize: "17px",
                 fontWeight: "700",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                boxShadow: "0 8px 24px rgba(102, 126, 234, 0.4)",
+                background: product.stock === 0 
+                  ? "#9ca3af" 
+                  : "#8b5cf6",
+                borderRadius: "12px",
+                border: "none",
+                color: "white",
+                cursor: product.stock === 0 ? "not-allowed" : "pointer",
+                transition: "all 0.3s ease",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+              }}
+              onMouseEnter={(e) => {
+                if (product.stock > 0) {
+                  e.currentTarget.style.background = "#7c3aed";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (product.stock > 0) {
+                  e.currentTarget.style.background = "#8b5cf6";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }
               }}
             >
-              Adicionar ao Carrinho
+              <span style={{ fontSize: "20px" }}>🛒</span>
+              {product.stock === 0 ? "Produto Esgotado" : "Adicionar ao Carrinho"}
             </button>
           </div>
         </div>

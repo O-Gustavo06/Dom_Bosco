@@ -15,10 +15,10 @@ class AdminUserController
     /**
      * Validação de admin via JWT
      */
-    private function ensureAdmin(): ?array
+    private function ensureAdmin(): array
     {
         $token = JWT::getTokenFromHeader();
-        
+
         if (!$token) {
             http_response_code(401);
             echo json_encode(['error' => 'Token não fornecido']);
@@ -26,14 +26,14 @@ class AdminUserController
         }
 
         $payload = JWT::verify($token);
-        
+
         if (!$payload) {
             http_response_code(401);
             echo json_encode(['error' => 'Token inválido ou expirado']);
             exit;
         }
 
-        if ($payload['role'] !== 'admin') {
+        if (($payload['role'] ?? null) !== 'admin') {
             http_response_code(403);
             echo json_encode(['error' => 'Acesso permitido apenas para administradores']);
             exit;
@@ -61,12 +61,18 @@ class AdminUserController
     {
         $this->ensureAdmin();
 
-        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        $data     = json_decode($rawInput, true);
 
-        // Validações
-        if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
+        if (
+            empty($data['name']) ||
+            empty($data['email']) ||
+            empty($data['password'])
+        ) {
             http_response_code(400);
-            echo json_encode(['error' => 'Nome, email e senha são obrigatórios']);
+            echo json_encode([
+                'error' => 'Nome, email e senha são obrigatórios'
+            ]);
             return;
         }
 
@@ -77,10 +83,11 @@ class AdminUserController
             $this->ensureAdmin();
         }
 
-        // Valida role
-        if (!in_array($role, ['user', 'admin'])) {
+        if (!in_array($role, ['user', 'admin'], true)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Role inválido. Use: user ou admin']);
+            echo json_encode([
+                'error' => 'Role inválido. Use: user ou admin'
+            ]);
             return;
         }
 
@@ -99,7 +106,9 @@ class AdminUserController
             ]);
         } catch (Exception $e) {
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode([
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
@@ -110,43 +119,55 @@ class AdminUserController
     {
         $this->ensureAdmin();
 
-        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        $data     = json_decode($rawInput, true);
 
         $user = $this->user->getById($id);
 
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['error' => 'Usuário não encontrado']);
+            echo json_encode([
+                'error' => 'Usuário não encontrado'
+            ]);
             return;
         }
 
         try {
             $updateData = [];
 
-            if (isset($data['name'])) {
+            if (array_key_exists('name', $data)) {
                 $updateData['name'] = $data['name'];
             }
 
-            if (isset($data['email'])) {
+            if (array_key_exists('email', $data)) {
                 $updateData['email'] = $data['email'];
             }
 
-            if (isset($data['role']) && in_array($data['role'], ['user', 'admin'])) {
+            if (
+                array_key_exists('role', $data) &&
+                in_array($data['role'], ['user', 'admin'], true)
+            ) {
                 $updateData['role'] = $data['role'];
             }
 
             if (empty($updateData)) {
                 http_response_code(400);
-                echo json_encode(['error' => 'Nenhum campo para atualizar']);
+                echo json_encode([
+                    'error' => 'Nenhum campo para atualizar'
+                ]);
                 return;
             }
 
             $this->user->update($id, $updateData);
 
-            echo json_encode(['message' => 'Usuário atualizado com sucesso']);
+            echo json_encode([
+                'message' => 'Usuário atualizado com sucesso'
+            ]);
         } catch (Exception $e) {
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode([
+                'error' => $e->getMessage()
+            ]);
         }
     }
 
@@ -161,17 +182,23 @@ class AdminUserController
 
         if (!$user) {
             http_response_code(404);
-            echo json_encode(['error' => 'Usuário não encontrado']);
+            echo json_encode([
+                'error' => 'Usuário não encontrado'
+            ]);
             return;
         }
 
         try {
             $this->user->delete($id);
 
-            echo json_encode(['message' => 'Usuário deletado com sucesso']);
+            echo json_encode([
+                'message' => 'Usuário deletado com sucesso'
+            ]);
         } catch (Exception $e) {
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode([
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }

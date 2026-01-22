@@ -11,12 +11,17 @@ class Product
         $this->pdo = Database::connect();
     }
 
+    /* ==========================
+       CONSULTAS
+       ========================== */
+
     /**
      * PRODUTOS PÚBLICOS
+     * Retorna apenas produtos ativos com estoque >= 5
      */
     public function getAll(): array
     {
-        $sql = "
+        $sql = '
             SELECT
                 p.id,
                 p.name,
@@ -25,14 +30,19 @@ class Product
                 p.stock,
                 p.active,
                 p.image,
-                COALESCE(c.name, 'Sem categoria') AS category
+                COALESCE(c.name, \'Sem categoria\') AS category,
+                COALESCE(i.quantity, 0) AS inventory_quantity
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN inventory i ON i.product_id = p.id
             WHERE p.active = 1
+            AND (i.quantity IS NULL OR i.quantity >= 5)
             ORDER BY p.id DESC
-        ";
+        ';
 
-        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        return $this->pdo
+            ->query($sql)
+            ->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -40,7 +50,7 @@ class Product
      */
     public function getAllAdmin(): array
     {
-        $sql = "
+        $sql = '
             SELECT
                 p.id,
                 p.name,
@@ -50,13 +60,18 @@ class Product
                 p.active,
                 p.image,
                 p.category_id,
-                c.name AS category
+                c.name AS category,
+                COALESCE(i.quantity, 0) AS inventory_quantity,
+                COALESCE(i.min_quantity, 5) AS min_quantity
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN inventory i ON i.product_id = p.id
             ORDER BY p.id DESC
-        ";
+        ';
 
-        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        return $this->pdo
+            ->query($sql)
+            ->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -64,9 +79,9 @@ class Product
      */
     public function getById(int $id): ?array
     {
-        $stmt = $this->pdo->prepare("
-            SELECT * FROM products WHERE id = :id LIMIT 1
-        ");
+        $stmt = $this->pdo->prepare(
+            'SELECT * FROM products WHERE id = :id LIMIT 1'
+        );
 
         $stmt->execute([':id' => $id]);
 
@@ -75,17 +90,21 @@ class Product
         return $product ?: null;
     }
 
+    /* ==========================
+       ESCRITA
+       ========================== */
+
     /**
      * CRIAR PRODUTO
      */
     public function create(array $data): int
     {
-        $stmt = $this->pdo->prepare("
-            INSERT INTO products
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO products
                 (name, description, price, stock, category_id, image, active, created_at)
-            VALUES
-                (:name, :description, :price, :stock, :category_id, :image, 1, datetime('now'))
-        ");
+             VALUES
+                (:name, :description, :price, :stock, :category_id, :image, 1, datetime(\'now\'))'
+        );
 
         $stmt->execute([
             ':name'        => $data['name'],
@@ -104,8 +123,8 @@ class Product
      */
     public function update(int $id, array $data): bool
     {
-        $stmt = $this->pdo->prepare("
-            UPDATE products SET
+        $stmt = $this->pdo->prepare(
+            'UPDATE products SET
                 name = :name,
                 description = :description,
                 price = :price,
@@ -113,8 +132,8 @@ class Product
                 category_id = :category_id,
                 image = :image,
                 active = :active
-            WHERE id = :id
-        ");
+             WHERE id = :id'
+        );
 
         return $stmt->execute([
             ':id'          => $id,
@@ -133,7 +152,10 @@ class Product
      */
     public function delete(int $id): bool
     {
-        $stmt = $this->pdo->prepare("DELETE FROM products WHERE id = :id");
+        $stmt = $this->pdo->prepare(
+            'DELETE FROM products WHERE id = :id'
+        );
+
         return $stmt->execute([':id' => $id]);
     }
 }

@@ -24,6 +24,11 @@ export default function AdminProducts() {
   const [productImages, setProductImages] = useState([]);
   const [loadingImages, setLoadingImages] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
+  const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  const [customImageName, setCustomImageName] = useState("");
 
   useEffect(() => {
     fetchProducts();
@@ -56,23 +61,29 @@ export default function AdminProducts() {
   const fetchProductImages = async (productId) => {
     try {
       setLoadingImages(true);
+      setError("");
+      
+      if (!token) {
+        throw new Error("Token de autenticação não encontrado");
+      }
+
       const response = await fetch(`http://localhost:8000/api/admin/products/${productId}/images`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao buscar imagens");
+        const data = await response.json().catch(() => ({ error: "Erro desconhecido" }));
+        throw new Error(data.error || `Erro ${response.status}: ${response.statusText}`);
       }
 
+      const data = await response.json();
       setProductImages(data.images || []);
     } catch (err) {
       console.error("Erro ao buscar imagens:", err);
+      setError(`❌ ${err.message}`);
       setProductImages([]);
     } finally {
       setLoadingImages(false);
@@ -83,34 +94,65 @@ export default function AdminProducts() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    // Armazena os arquivos e abre o modal para nomear o primeiro
+    setPendingFiles(Array.from(files));
+    setCurrentFileIndex(0);
+    const fileName = files[0].name.split('.')[0];
+    setCustomImageName(fileName);
+    setShowNameModal(true);
+    e.target.value = "";
+  };
+
+  const processImageUpload = async () => {
+    if (!customImageName.trim()) {
+      setError("❌ Por favor, insira um nome para a imagem");
+      return;
+    }
+
     setUploading(true);
     setError("");
 
     try {
-      for (let i = 0; i < files.length; i++) {
-        const formDataUpload = new FormData();
-        formDataUpload.append("image", files[i]);
-        formDataUpload.append("product_id", selectedProductForImages.id);
+      const file = pendingFiles[currentFileIndex];
+      const fileExtension = file.name.split('.').pop();
+      const customFileName = `${customImageName.trim()}.${fileExtension}`;
 
-        const response = await fetch("http://localhost:8000/api/admin/images/upload", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-          body: formDataUpload,
-        });
+      const formDataUpload = new FormData();
+      formDataUpload.append("image", file);
+      formDataUpload.append("product_id", selectedProductForImages.id);
+      formDataUpload.append("custom_name", customFileName);
 
-        const data = await response.json();
+      const response = await fetch("http://localhost:8000/api/admin/images/upload", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+        body: formDataUpload,
+      });
 
-        if (!response.ok) {
-          throw new Error(data.error || "Erro ao fazer upload da imagem");
-        }
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao fazer upload da imagem");
       }
 
-      setSuccess(`✅ ${files.length} imagem(ns) enviada(s) com sucesso!`);
-      await fetchProductImages(selectedProductForImages.id);
-      e.target.value = "";
-      setTimeout(() => setSuccess(""), 3000);
+      // Se há mais arquivos, vai para o próximo
+      if (currentFileIndex < pendingFiles.length - 1) {
+        const nextIndex = currentFileIndex + 1;
+        setCurrentFileIndex(nextIndex);
+        const nextFileName = pendingFiles[nextIndex].name.split('.')[0];
+        setCustomImageName(nextFileName);
+      } else {
+        // Última imagem enviada
+        setSuccess(`✅ ${pendingFiles.length} imagem(ns) enviada(s) com sucesso!`);
+        await fetchProductImages(selectedProductForImages.id);
+        await fetchProducts();
+        setShowNameModal(false);
+        setPendingFiles([]);
+        setCurrentFileIndex(0);
+        setCustomImageName("");
+        setTimeout(() => setSuccess(""), 3000);
+      }
     } catch (err) {
       setError(`❌ ${err.message}`);
       console.error("Erro ao fazer upload:", err);
@@ -119,14 +161,20 @@ export default function AdminProducts() {
     }
   };
 
+  const cancelImageNaming = () => {
+    setShowNameModal(false);
+    setPendingFiles([]);
+    setCurrentFileIndex(0);
+    setCustomImageName("");
+  };
+
   const handleDeleteImage = async (filename) => {
-    if (!confirm(`Tem certeza que deseja deletar "${filename}"?`)) return;
+    if (!confirm(`Tem certeza que deseja deletar a imagem?`)) return;
 
     try {
-      const response = await fetch(`http://localhost:8000/api/admin/images/${selectedProductForImages.id}/${encodeURIComponent(filename)}`, {
+      const response = await fetch(`http://localhost:8000/api/admin/products/${selectedProductForImages.id}/images/${encodeURIComponent(filename)}`, {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       });
@@ -139,6 +187,7 @@ export default function AdminProducts() {
 
       setSuccess("✅ Imagem deletada com sucesso!");
       await fetchProductImages(selectedProductForImages.id);
+      await fetchProducts(); // Atualiza a lista de produtos para refletir a remoção da imagem
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(`❌ ${err.message}`);
@@ -149,6 +198,8 @@ export default function AdminProducts() {
   const openImageManager = (product) => {
     setSelectedProductForImages(product);
     setShowImageManager(true);
+    setError("");
+    setSuccess("");
     fetchProductImages(product.id);
   };
 
@@ -310,25 +361,22 @@ export default function AdminProducts() {
       <button
         onClick={() => setShowForm(!showForm)}
         style={{
-          padding: "12px 24px",
-          backgroundColor: showForm ? "#64748b" : "#6366f1",
+          padding: "10px 20px",
+          backgroundColor: showForm ? "#6b7280" : "#7c3aed",
           color: "white",
           border: "none",
-          borderRadius: "10px",
+          borderRadius: "8px",
           cursor: "pointer",
-          fontSize: "16px",
+          fontSize: "14px",
           fontWeight: "600",
           marginBottom: "24px",
-          transition: "all 0.3s ease",
-          boxShadow: "0 2px 8px rgba(99, 102, 241, 0.2)",
+          transition: "all 0.2s ease",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = showForm ? "0 4px 12px rgba(100, 116, 139, 0.3)" : "0 4px 12px rgba(99, 102, 241, 0.4)";
+          e.currentTarget.style.backgroundColor = showForm ? "#4b5563" : "#6d28d9";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "0 2px 8px rgba(99, 102, 241, 0.2)";
+          e.currentTarget.style.backgroundColor = showForm ? "#6b7280" : "#7c3aed";
         }}
       >
         {showForm ? "✕ Cancelar" : "➕ Novo Produto"}
@@ -464,96 +512,317 @@ export default function AdminProducts() {
         </form>
       )}
 
-      <div style={{ display: "grid", gap: "16px" }}>
-        {products.map((product) => (
-          <div
-            key={product.id}
-            style={{
-              backgroundColor: "var(--surface)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "12px",
-              padding: "20px",
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: "20px",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <h3 style={{ margin: "0 0 8px 0", color: "var(--text-primary)" }}>
-                {product.name}
-              </h3>
-              <p style={{ margin: "0 0 12px 0", color: "var(--text-secondary)", fontSize: "14px" }}>
-                {product.description}
-              </p>
-              <div style={{ display: "flex", gap: "24px", fontSize: "14px", color: "var(--text-secondary)" }}>
-                <span>💰 R$ {parseFloat(product.price).toFixed(2)}</span>
-                <span>📦 {product.stock} em estoque</span>
-                <span>{product.active ? "✅ Ativo" : "❌ Desativado"}</span>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "16px" }}>
+        {products.map((product) => {
+          let imageUrl = 'http://localhost:8000/images/products/default.png';
+          
+          try {
+            if (product.image) {
+              const parsed = JSON.parse(product.image);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                imageUrl = `http://localhost:8000/images/products/${parsed[0]}`;
+              } else if (typeof product.image === 'string' && !product.image.startsWith('[')) {
+                imageUrl = `http://localhost:8000/images/products/${product.image}`;
+              }
+            }
+          } catch (e) {
+            if (product.image && typeof product.image === 'string') {
+              imageUrl = `http://localhost:8000/images/products/${product.image}`;
+            }
+          }
+
+          return (
+            <div
+              key={product.id}
+              style={{
+                backgroundColor: "var(--surface)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "8px",
+                overflow: "hidden",
+                transition: "all 0.2s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  height: "180px",
+                  backgroundColor: "var(--surface-gray)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              >
+                <img
+                  src={imageUrl}
+                  alt={product.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                  onError={(e) => {
+                    e.target.src = 'http://localhost:8000/images/products/default.png';
+                  }}
+                />
+                {!product.active && (
+                  <div style={{
+                    position: "absolute",
+                    top: "8px",
+                    right: "8px",
+                    backgroundColor: "rgba(239, 68, 68, 0.9)",
+                    color: "white",
+                    padding: "4px 8px",
+                    borderRadius: "4px",
+                    fontSize: "11px",
+                    fontWeight: "600",
+                  }}>
+                    Inativo
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: "16px" }}>
+                <h3 style={{ 
+                  margin: "0 0 8px 0", 
+                  color: "var(--text-primary)", 
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}>
+                  {product.name}
+                </h3>
+                <p style={{ 
+                  margin: "0 0 12px 0", 
+                  color: "var(--text-secondary)", 
+                  fontSize: "13px",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  minHeight: "36px",
+                }}>
+                  {product.description || "Sem descrição"}
+                </p>
+                <div style={{ 
+                  display: "flex", 
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                  paddingTop: "12px",
+                  borderTop: "1px solid var(--border-color)",
+                }}>
+                  <span style={{ 
+                    color: "var(--text-primary)", 
+                    fontWeight: "700",
+                    fontSize: "18px",
+                  }}>
+                    R$ {parseFloat(product.price).toFixed(2)}
+                  </span>
+                  <span style={{ 
+                    color: "var(--text-secondary)", 
+                    fontSize: "13px",
+                  }}>
+                    Estoque: {product.stock}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    onClick={() => handleEdit(product)}
+                    style={{
+                      flex: 1,
+                      padding: "8px",
+                      backgroundColor: "#3b82f6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#2563eb";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#3b82f6";
+                    }}
+                  >
+                    ✏️
+                  </button>
+
+                  <button
+                    onClick={() => openImageManager(product)}
+                    style={{
+                      flex: 1,
+                      padding: "8px",
+                      backgroundColor: "transparent",
+                      color: "var(--text-primary)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--surface-gray)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    🖼️
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(product.id, product.name)}
+                    style={{
+                      padding: "8px 12px",
+                      backgroundColor: "#ef4444",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#dc2626";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#ef4444";
+                    }}
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
             </div>
+          );
+        })}
+      </div>
 
-            <div style={{ display: "flex", gap: "8px", flexDirection: "column" }}>
-              <button
-                onClick={() => handleEdit(product)}
+      {showNameModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1100,
+            padding: "20px",
+          }}
+          onClick={cancelImageNaming}
+        >
+          <div
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "450px",
+              width: "100%",
+              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ margin: "0 0 16px 0", color: "var(--text-primary)", fontSize: "20px" }}>
+              📝 Nomear Imagem ({currentFileIndex + 1}/{pendingFiles.length})
+            </h2>
+
+            <div style={{ marginBottom: "16px" }}>
+              <p style={{ margin: "0 0 8px 0", color: "var(--text-secondary)", fontSize: "14px" }}>
+                Arquivo original: <strong>{pendingFiles[currentFileIndex]?.name}</strong>
+              </p>
+              <label style={{ display: "block", marginBottom: "8px", color: "var(--text-primary)", fontWeight: "600" }}>
+                Nome da Imagem:
+              </label>
+              <input
+                type="text"
+                value={customImageName}
+                onChange={(e) => setCustomImageName(e.target.value)}
+                placeholder="Ex: caneta-azul"
+                autoFocus
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !uploading) {
+                    processImageUpload();
+                  }
+                }}
                 style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  backgroundColor: "var(--background)",
+                  color: "var(--text-primary)",
+                  boxSizing: "border-box",
+                }}
+              />
+              <p style={{ margin: "8px 0 0 0", color: "var(--text-secondary)", fontSize: "12px" }}>
+                💡 Use apenas letras, números e hífens (ex: caneta-azul-10mm)
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={cancelImageNaming}
+                disabled={uploading}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  backgroundColor: "transparent",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  cursor: uploading ? "not-allowed" : "pointer",
                   fontSize: "14px",
                   fontWeight: "600",
-                  transition: "all 0.3s ease",
+                  opacity: uploading ? 0.5 : 1,
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#2563eb"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#3b82f6"}
               >
-                ✏️ Editar
+                ✕ Cancelar
               </button>
-
               <button
-                onClick={() => openImageManager(product)}
+                onClick={processImageUpload}
+                disabled={uploading || !customImageName.trim()}
                 style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#10b981",
+                  flex: 2,
+                  padding: "12px",
+                  backgroundColor: !customImageName.trim() || uploading ? "#6b7280" : "#7c3aed",
                   color: "white",
                   border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
+                  borderRadius: "8px",
+                  cursor: !customImageName.trim() || uploading ? "not-allowed" : "pointer",
                   fontSize: "14px",
                   fontWeight: "600",
-                  transition: "all 0.3s ease",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#059669"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#10b981"}
               >
-                🖼️ Imagens
-              </button>
-
-              <button
-                onClick={() => handleDelete(product.id, product.name)}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#ef4444",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  transition: "all 0.3s ease",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#dc2626"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#ef4444"}
-              >
-                🗑️ Deletar
+                {uploading ? "⏳ Enviando..." : currentFileIndex < pendingFiles.length - 1 ? "➡️ Próxima" : "✓ Enviar"}
               </button>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {showImageManager && selectedProductForImages && (
         <div

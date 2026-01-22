@@ -66,7 +66,198 @@ function Home() {
   }
 
   return (
-    <div className="container">
+    <>
+      {/* Hero Banner Full Width - Estilo Papelaria Dom Bosco */}
+      <div
+        style={{
+          width: "100vw",
+          marginLeft: "calc(-50vw + 50%)",
+          marginBottom: "48px",
+          background: "linear-gradient(135deg, #fce7f3 0%, #e0e7ff 30%, #ddd6fe 60%, #fef3c7 100%)",
+          position: "relative",
+          minHeight: "450px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "60px 20px",
+          overflow: "hidden",
+        }}
+      >
+        {/* Círculos decorativos de fundo */}
+        <div style={{
+          position: "absolute",
+          top: "40px",
+          left: "10%",
+          width: "120px",
+          height: "120px",
+          borderRadius: "50%",
+          border: "2px dashed rgba(167, 139, 250, 0.3)",
+        }} />
+        <div style={{
+          position: "absolute",
+          top: "60px",
+          right: "15%",
+          width: "80px",
+          height: "80px",
+          borderRadius: "50%",
+          border: "2px dashed rgba(244, 114, 182, 0.3)",
+        }} />
+        
+        {/* Risquinhos decorativos */}
+        <div style={{
+          position: "absolute",
+          top: "100px",
+          left: "20%",
+          width: "60px",
+          height: "2px",
+          background: "rgba(96, 165, 250, 0.4)",
+          transform: "rotate(-15deg)",
+        }} />
+        <div style={{
+          position: "absolute",
+          bottom: "120px",
+          right: "25%",
+          width: "50px",
+          height: "2px",
+          background: "rgba(251, 146, 60, 0.4)",
+          transform: "rotate(25deg)",
+        }} />
+
+        {/* Estrelas */}
+        <div style={{
+          position: "absolute",
+          top: "80px",
+          right: "12%",
+          fontSize: "48px",
+          opacity: "0.7",
+        }}>
+          ⭐
+        </div>
+
+        {/* Conteúdo Central */}
+        <div style={{ 
+          textAlign: "center", 
+          position: "relative", 
+          zIndex: 2, 
+          maxWidth: "1200px",
+          marginBottom: "80px"
+        }}>
+          <h1 style={{
+            fontSize: "clamp(36px, 8vw, 72px)",
+            fontWeight: "700",
+            margin: "0 0 16px 0",
+            color: "#1f2937",
+            letterSpacing: "2px",
+            fontFamily: "'Segoe UI', sans-serif",
+          }}>
+            Papelaria
+          </h1>
+          <h2 style={{
+            fontSize: "clamp(48px, 10vw, 110px)",
+            fontWeight: "900",
+            margin: "0",
+            letterSpacing: "-2px",
+            fontFamily: "'Comic Sans MS', 'Brush Script MT', cursive",
+            display: "flex",
+            justifyContent: "center",
+            gap: "4px",
+            flexWrap: "wrap",
+          }}>
+            <span style={{ color: "#ef4444" }}>D</span>
+            <span style={{ color: "#ec4899" }}>o</span>
+            <span style={{ color: "#a855f7" }}>m</span>
+            <span style={{ color: "#6366f1", marginRight: "20px" }}> </span>
+            <span style={{ color: "#3b82f6" }}>B</span>
+            <span style={{ color: "#10b981" }}>o</span>
+            <span style={{ color: "#84cc16" }}>s</span>
+            <span style={{ color: "#eab308" }}>c</span>
+            <span style={{ color: "#f97316" }}>o</span>
+          </h2>
+        </div>
+
+        {/* Plataforma com itens de papelaria na parte inferior */}
+        <div style={{
+          position: "absolute",
+          bottom: "0",
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "80%",
+          maxWidth: "800px",
+          height: "120px",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.95) 100%)",
+          borderRadius: "200px 200px 0 0",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-end",
+          padding: "20px",
+          gap: "30px",
+          boxShadow: "0 -10px 30px rgba(0,0,0,0.05)",
+        }}>
+          {/* Grampeador rosa */}
+          <div style={{
+            fontSize: "48px",
+            transform: "translateY(-10px)",
+          }}>📎</div>
+          
+          {/* Post-its */}
+          <div style={{
+            fontSize: "48px",
+            transform: "translateY(-5px)",
+          }}>📝</div>
+          
+          {/* Caderno azul */}
+          <div style={{
+            fontSize: "52px",
+            transform: "translateY(-8px)",
+          }}>📘</div>
+          
+          {/* Caderno branco */}
+          <div style={{
+            fontSize: "50px",
+            transform: "translateY(-12px)",
+          }}>📓</div>
+          
+          {/* Lápis coloridos */}
+          <div style={{
+            fontSize: "48px",
+            transform: "translateY(-6px)",
+          }}>✏️</div>
+          
+          <div style={{
+            fontSize: "48px",
+            transform: "translateY(-10px)",
+          }}>🖍️</div>
+          
+          <div style={{
+            fontSize: "48px",
+            transform: "translateY(-4px)",
+          }}>🖊️</div>
+        </div>
+
+        {/* Elementos decorativos superiores */}
+        <div style={{
+          position: "absolute",
+          top: "30px",
+          left: "15%",
+          fontSize: "32px",
+          opacity: "0.6",
+          transform: "rotate(-20deg)",
+        }}>
+          ✏️
+        </div>
+        <div style={{
+          position: "absolute",
+          top: "50px",
+          right: "20%",
+          fontSize: "28px",
+          opacity: "0.6",
+          transform: "rotate(15deg)",
+        }}>
+          📐
+        </div>
+      </div>
+
+      <div className="container">
       <div
         className="fade-in"
         style={{
@@ -211,7 +402,8 @@ function Home() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
