@@ -14,6 +14,11 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      
+      if (!token) {
+        throw new Error("Token não encontrado. Faça login novamente.");
+      }
+      
       const response = await fetch("http://localhost:8000/api/admin/users", {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -21,6 +26,16 @@ export default function AdminUsers() {
       });
 
       const data = await response.json();
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setError("❌ Sessão expirada. Redirecionando para login...");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Erro ao buscar usuários");

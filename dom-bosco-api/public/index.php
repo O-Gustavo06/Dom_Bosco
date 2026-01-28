@@ -1,5 +1,32 @@
 <?php
 
+/**
+ * Dom Bosco API - Entry Point
+ */
+
+// Carregar variáveis de ambiente de forma simples
+$envFile = __DIR__ . '/../.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0) {
+            continue;
+        }
+        
+        if (strpos($line, '=') !== false) {
+            list($name, $value) = explode('=', $line, 2);
+            $name = trim($name);
+            $value = trim($value);
+            
+            if (!empty($name)) {
+                $_ENV[$name] = $value;
+                putenv("$name=$value");
+            }
+        }
+    }
+}
+
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $publicFile = __DIR__ . $uri;
 
@@ -34,7 +61,6 @@ if ($uri === '/images/products/default.png') {
         
         header("Content-Type: image/png");
         imagepng($image);
-        imagedestroy($image);
         exit;
     }
     
@@ -65,14 +91,5 @@ if ($uri !== '/' && file_exists($publicFile) && is_file($publicFile)) {
     exit;
 }
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Content-Type: application/json; charset=UTF-8");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
+// Rotas da API
 require_once __DIR__ . '/../routes/api.php';

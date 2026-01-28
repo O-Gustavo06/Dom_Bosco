@@ -37,6 +37,11 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      
+      if (!token) {
+        throw new Error("Token não encontrado. Faça login novamente.");
+      }
+      
       const response = await fetch("http://localhost:8000/api/admin/products", {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -45,11 +50,22 @@ export default function AdminProducts() {
 
       const data = await response.json();
 
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setError("❌ Sessão expirada. Por favor, faça login novamente.");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(data.error || "Erro ao buscar produtos");
       }
 
-      setProducts(data.products || []);
+      // A API retorna um array direto, não um objeto com propriedade products
+      setProducts(Array.isArray(data) ? data : (data.products || []));
     } catch (err) {
       setError(`❌ ${err.message}`);
       console.error("Erro ao buscar produtos:", err);
@@ -172,6 +188,12 @@ export default function AdminProducts() {
     if (!confirm(`Tem certeza que deseja deletar a imagem?`)) return;
 
     try {
+      setError("");
+      setSuccess("");
+      
+      console.log('🗑️ Tentando deletar imagem:', filename);
+      console.log('🔗 URL:', `http://localhost:8000/api/admin/products/${selectedProductForImages.id}/images/${encodeURIComponent(filename)}`);
+      
       const response = await fetch(`http://localhost:8000/api/admin/products/${selectedProductForImages.id}/images/${encodeURIComponent(filename)}`, {
         method: "DELETE",
         headers: {
@@ -179,19 +201,26 @@ export default function AdminProducts() {
         },
       });
 
-      const data = await response.json();
+      console.log('📡 Status da resposta:', response.status);
 
       if (!response.ok) {
-        throw new Error(data.error || "Erro ao deletar imagem");
+        const data = await response.json().catch(() => ({ error: "Erro ao deletar imagem" }));
+        console.error('❌ Erro na resposta:', data);
+        throw new Error(data.error || `Erro ${response.status}: ${response.statusText}`);
       }
 
+      const data = await response.json();
+      console.log('✅ Resposta:', data);
+      
       setSuccess("✅ Imagem deletada com sucesso!");
       await fetchProductImages(selectedProductForImages.id);
-      await fetchProducts(); // Atualiza a lista de produtos para refletir a remoção da imagem
+      await fetchProducts();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
-      setError(`❌ ${err.message}`);
-      console.error("Erro ao deletar imagem:", err);
+      console.error("❌ Erro completo ao deletar imagem:", err);
+      const errorMessage = err.message || "Erro de conexão com o servidor";
+      setError(`❌ ${errorMessage}`);
+      setTimeout(() => setError(""), 5000);
     }
   };
 
@@ -246,6 +275,16 @@ export default function AdminProducts() {
 
       const data = await response.json();
 
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setError("❌ Sessão expirada. Redirecionando para login...");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(data.error || data.errors?.[0] || "Erro ao salvar produto");
       }
@@ -266,6 +305,8 @@ export default function AdminProducts() {
     setError("");
     setSuccess("");
 
+    console.log("Tentando deletar produto ID:", id);
+
     try {
       const response = await fetch(`http://localhost:8000/api/admin/products/${id}`, {
         method: "DELETE",
@@ -275,8 +316,12 @@ export default function AdminProducts() {
         },
       });
 
+      console.log("Status da resposta:", response.status);
+
+      const data = await response.json();
+      console.log("Resposta do servidor:", data);
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || "Erro ao deletar produto");
       }
 
@@ -635,7 +680,7 @@ export default function AdminProducts() {
                     color: "var(--text-secondary)", 
                     fontSize: "13px",
                   }}>
-                    Estoque: {product.stock}
+                    Estoque: {product.inventory_quantity ?? product.stock}
                   </span>
                 </div>
 

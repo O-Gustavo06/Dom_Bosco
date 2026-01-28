@@ -20,6 +20,11 @@ export default function AdminSettings() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
+      
+      if (!token) {
+        throw new Error("Token não encontrado. Faça login novamente.");
+      }
+      
       const response = await fetch("http://localhost:8000/api/settings", {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -28,9 +33,21 @@ export default function AdminSettings() {
 
       const data = await response.json();
 
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setError("❌ Sessão expirada. Redirecionando para login...");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(data.error || "Erro ao buscar configurações");
       }
+
+      console.log("Configurações carregadas:", data);
 
       if (data.settings) {
         setSettings(data.settings);
@@ -55,6 +72,8 @@ export default function AdminSettings() {
     setError("");
     setSuccess("");
 
+    console.log("Salvando configurações:", settings);
+
     try {
       const response = await fetch("http://localhost:8000/api/settings", {
         method: "PUT",
@@ -66,6 +85,17 @@ export default function AdminSettings() {
       });
 
       const data = await response.json();
+      console.log("Resposta do servidor ao salvar:", data);
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setError("❌ Sessão expirada. Redirecionando para login...");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "Erro ao salvar configurações");

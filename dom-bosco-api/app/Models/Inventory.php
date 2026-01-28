@@ -75,6 +75,7 @@ class Inventory
 
     /**
      * Atualiza a quantidade em estoque
+     * Auto-inativa/reativa o produto baseado no estoque
      */
     public function updateQuantity(int $productId, int $quantity): bool
     {
@@ -85,14 +86,24 @@ class Inventory
             WHERE product_id = :product_id
         ");
 
-        return $stmt->execute([
+        $result = $stmt->execute([
             ':quantity' => $quantity,
             ':product_id' => $productId
         ]);
+
+        // Auto-atualizar status do produto baseado no estoque
+        if ($result) {
+            require_once __DIR__ . '/Product.php';
+            $productModel = new Product();
+            $productModel->updateActiveStatusByStock($productId);
+        }
+
+        return $result;
     }
 
     /**
      * Incrementa o estoque (entrada de mercadoria)
+     * Auto-inativa/reativa o produto baseado no estoque
      */
     public function increment(int $productId, int $amount): bool
     {
@@ -103,15 +114,25 @@ class Inventory
             WHERE product_id = :product_id
         ");
 
-        return $stmt->execute([
+        $result = $stmt->execute([
             ':amount' => $amount,
             ':product_id' => $productId
         ]);
+
+        // Auto-atualizar status do produto baseado no estoque
+        if ($result) {
+            require_once __DIR__ . '/Product.php';
+            $productModel = new Product();
+            $productModel->updateActiveStatusByStock($productId);
+        }
+
+        return $result;
     }
 
     /**
      * Decrementa o estoque (venda/saída)
      * Retorna false se não houver estoque suficiente
+     * Auto-inativa/reativa o produto baseado no estoque
      */
     public function decrement(int $productId, int $amount): bool
     {
@@ -130,10 +151,19 @@ class Inventory
             AND quantity >= :amount
         ");
 
-        return $stmt->execute([
+        $result = $stmt->execute([
             ':amount' => $amount,
             ':product_id' => $productId
         ]);
+
+        // Auto-atualizar status do produto baseado no estoque
+        if ($result) {
+            require_once __DIR__ . '/Product.php';
+            $productModel = new Product();
+            $productModel->updateActiveStatusByStock($productId);
+        }
+
+        return $result;
     }
 
     /**

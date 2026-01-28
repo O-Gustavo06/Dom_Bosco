@@ -35,30 +35,41 @@ function Checkout() {
       return;
     }
 
+    // Validar campos obrigatórios
+    if (!formData.name || !formData.email) {
+      setError("Nome e email são obrigatórios!");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const payload = {
+        items: cart,
+        total,
+        customer: {
+          name: formData.name,
+          email: formData.email,
+          address: formData.address,
+          city: formData.city,
+          zipCode: formData.zipCode,
+        },
+      };
+
+      console.log("Enviando pedido:", payload);
+
       const response = await fetch("http://localhost:8000/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          items: cart,
-          total,
-          customer: {
-            name: formData.name,
-            email: formData.email,
-            address: formData.address,
-            city: formData.city,
-            zipCode: formData.zipCode,
-          },
-        }),
+        body: JSON.stringify(payload),
       });
 
       let data;
       try {
         data = await response.json();
+        console.log("Resposta do servidor:", data);
       } catch (jsonError) {
         throw new Error(`Erro ao processar resposta do servidor: ${response.status}`);
       }
@@ -67,10 +78,10 @@ function Checkout() {
         throw new Error(data.error || data.message || `Erro HTTP: ${response.status}`);
       }
 
-      // Aceita diferentes formatos de resposta do backend
-      const orderId = data.order_id || data.id || data.orderId || data.order?.id;
+      // O backend retorna: { message: "...", data: { order_id: X } }
+      const orderId = data.data?.order_id || data.order_id || data.id || data.orderId || data.order?.id;
       
-      if (data.success || orderId) {
+      if (data.message || orderId) {
         alert(`Pedido #${orderId} criado com sucesso!`);
         clearCart();
         navigate("/");

@@ -1,0 +1,35 @@
+{
+    "name": "dom-bosco/api",
+    "description": "Dom Bosco API - Laravel-style com PHP puro",
+    "type": "project",
+    "require": {
+        "php": ">=8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "App\\Http\\": "app/Http/",
+            "App\\Http\\Controllers\\": "app/Http/Controllers/",
+            "App\\Http\\Middleware\\": "app/Http/Middleware/",
+            "App\\Models\\": "app/Models/",
+            "App\\Utils\\": "app/Utils/"
+        },
+        "files": [
+            "app/Utils/JWT.php",
+            "app/Models/User.php",
+            "app/Models/Product.php",
+            "app/Models/Order.php",
+            "app/Models/Image.php",
+            "app/Models/Inventory.php",
+            "app/Utils/Logger.php",
+            "config/database.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

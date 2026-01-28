@@ -46,3 +46,18 @@
 [2026-01-22 03:14:59] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
 [2026-01-22 03:15:37] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
 [2026-01-22 23:37:55] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":40,"count":2}
+[2026-01-24 03:11:30] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":43,"count":0}
+[2026-01-24 03:11:57] [INFO] Tentativa de upload de imagem {"user_id":11,"ip":"::1"}
+[2026-01-24 03:11:57] [INFO] Arquivo salvo com sucesso {"product_id":43,"filename":"regua-30cm.jpg","size":10228,"path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/regua-30cm.jpg"}
+[2026-01-24 03:11:57] [INFO] Upload realizado com sucesso {"user_id":11,"product_id":"43","filename":"regua-30cm.jpg","file_size":10228,"custom_name":"regua-30cm.jpg"}
+[2026-01-24 03:11:57] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":43,"count":1}
+[2026-01-24 03:12:24] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":43,"count":1}
+[2026-01-27 01:29:04] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":52,"count":0}
+[2026-01-27 01:29:15] [INFO] Tentativa de upload de imagem {"user_id":11,"ip":"::1"}
+[2026-01-27 01:29:15] [INFO] Arquivo salvo com sucesso {"product_id":52,"filename":"notebook.jpg","size":51226,"path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/notebook.jpg"}
+[2026-01-27 01:29:15] [INFO] Upload realizado com sucesso {"user_id":11,"product_id":"52","filename":"notebook.jpg","file_size":51226,"custom_name":"notebook.jpg"}
+[2026-01-27 01:29:15] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":52,"count":1}
+[2026-01-27 01:29:29] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":2}
+[2026-01-27 01:37:05] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":52,"count":1}
+[2026-01-27 01:37:09] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":2}
+[2026-01-27 01:38:36] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":2}

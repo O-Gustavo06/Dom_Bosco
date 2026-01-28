@@ -146,8 +146,12 @@ function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { isDark } = useTheme();
+  
+  // Usar o estoque real da tabela inventory
+  const currentStock = product ? (product.inventory_quantity ?? product.stock) : 0;
   
   const allImages = getAllImages(product);
   const safeImageIndex = allImages.length > 0 
@@ -161,7 +165,8 @@ function ProductDetails() {
     setLoading(true);
     setCurrentImageIndex(0); 
     setImageError(false); 
-    setProduct(null); 
+    setProduct(null);
+    setQuantity(1); // Reset quantity when product changes
     
     fetch(`http://localhost:8000/api/products/${id}`)
       .then((res) => {
@@ -177,6 +182,24 @@ function ProductDetails() {
         setLoading(false);
       });
   }, [id]);
+
+  const handleIncreaseQuantity = () => {
+    if (quantity < product.stock) {
+      setQuantity(prev => prev + 1);
+    }
+  };
+
+  const handleDecreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
+    }
+  };
+
+  const handleAddToCart = () => {
+    for (let i = 0; i < quantity; i++) {
+      addToCart(product);
+    }
+  };
 
   if (loading) {
     return (
@@ -546,11 +569,11 @@ function ProductDetails() {
                     Estoque
                   </div>
                   <div style={{ 
-                    color: product.stock > 10 ? "#10b981" : product.stock > 0 ? "#f59e0b" : "#ef4444", 
+                    color: currentStock > 10 ? "#10b981" : currentStock > 0 ? "#f59e0b" : "#ef4444", 
                     fontSize: "24px",
                     fontWeight: "700",
                   }}>
-                    {product.stock}
+                    {currentStock}
                   </div>
                 </div>
                 
@@ -570,31 +593,164 @@ function ProductDetails() {
                     Status
                   </div>
                   <div style={{ 
-                    color: product.stock > 0 ? "#10b981" : "#ef4444", 
+                    color: currentStock > 0 ? "#10b981" : "#ef4444", 
                     fontSize: "14px",
                     fontWeight: "700",
                   }}>
-                    {product.stock > 0 ? "Disponível" : "Esgotado"}
+                    {currentStock > 0 ? "Disponível" : "Esgotado"}
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Seletor de Quantidade */}
+            <div style={{
+              background: "var(--surface)",
+              border: "2px solid var(--border-color)",
+              borderRadius: "12px",
+              padding: "24px",
+              marginBottom: "20px",
+            }}>
+              <div style={{
+                fontSize: "14px",
+                fontWeight: "600",
+                color: "var(--text-primary)",
+                marginBottom: "16px",
+              }}>
+                Quantidade
+              </div>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+              }}>
+                <button
+                  onClick={handleDecreaseQuantity}
+                  disabled={quantity <= 1}
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "10px",
+                    border: "2px solid var(--border-color)",
+                    background: "var(--surface-gray)",
+                    color: "var(--text-primary)",
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    cursor: quantity <= 1 ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
+                    opacity: quantity <= 1 ? 0.5 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (quantity > 1) {
+                      e.currentTarget.style.borderColor = "#8b5cf6";
+                      e.currentTarget.style.background = "#8b5cf6";
+                      e.currentTarget.style.color = "white";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (quantity > 1) {
+                      e.currentTarget.style.borderColor = "var(--border-color)";
+                      e.currentTarget.style.background = "var(--surface-gray)";
+                      e.currentTarget.style.color = "var(--text-primary)";
+                    }
+                  }}
+                >
+                  −
+                </button>
+                
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    if (val >= 1 && val <= currentStock) {
+                      setQuantity(val);
+                    }
+                  }}
+                  min="1"
+                  max={currentStock}
+                  style={{
+                    flex: 1,
+                    textAlign: "center",
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    padding: "12px",
+                    border: "2px solid var(--border-color)",
+                    borderRadius: "10px",
+                    background: "var(--surface)",
+                    color: "var(--text-primary)",
+                    outline: "none",
+                  }}
+                />
+                
+                <button
+                  onClick={handleIncreaseQuantity}
+                  disabled={quantity >= currentStock}
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    borderRadius: "10px",
+                    border: "2px solid var(--border-color)",
+                    background: "var(--surface-gray)",
+                    color: "var(--text-primary)",
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    cursor: quantity >= currentStock ? "not-allowed" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s ease",
+                    opacity: quantity >= currentStock ? 0.5 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (quantity < currentStock) {
+                      e.currentTarget.style.borderColor = "#8b5cf6";
+                      e.currentTarget.style.background = "#8b5cf6";
+                      e.currentTarget.style.color = "white";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (quantity < currentStock) {
+                      e.currentTarget.style.borderColor = "var(--border-color)";
+                      e.currentTarget.style.background = "var(--surface-gray)";
+                      e.currentTarget.style.color = "var(--text-primary)";
+                    }
+                  }}
+                >
+                  +
+                </button>
+              </div>
+              
+              {quantity === currentStock && (
+                <div style={{
+                  marginTop: "12px",
+                  fontSize: "13px",
+                  color: "#f59e0b",
+                  fontWeight: "500",
+                }}>
+                  ⚠️ Quantidade máxima disponível em estoque
+                </div>
+              )}
+            </div>
+
             <button
-              onClick={() => addToCart(product)}
-              disabled={product.stock === 0}
+              onClick={handleAddToCart}
+              disabled={currentStock === 0}
               style={{
                 width: "100%",
                 padding: "18px",
                 fontSize: "17px",
                 fontWeight: "700",
-                background: product.stock === 0 
+                background: currentStock === 0 
                   ? "#9ca3af" 
                   : "#8b5cf6",
                 borderRadius: "12px",
                 border: "none",
                 color: "white",
-                cursor: product.stock === 0 ? "not-allowed" : "pointer",
+                cursor: currentStock === 0 ? "not-allowed" : "pointer",
                 transition: "all 0.3s ease",
                 display: "flex",
                 alignItems: "center",
@@ -602,20 +758,20 @@ function ProductDetails() {
                 gap: "10px",
               }}
               onMouseEnter={(e) => {
-                if (product.stock > 0) {
+                if (currentStock > 0) {
                   e.currentTarget.style.background = "#7c3aed";
                   e.currentTarget.style.transform = "translateY(-2px)";
                 }
               }}
               onMouseLeave={(e) => {
-                if (product.stock > 0) {
+                if (currentStock > 0) {
                   e.currentTarget.style.background = "#8b5cf6";
                   e.currentTarget.style.transform = "translateY(0)";
                 }
               }}
             >
               <span style={{ fontSize: "20px" }}>🛒</span>
-              {product.stock === 0 ? "Produto Esgotado" : "Adicionar ao Carrinho"}
+              {currentStock === 0 ? "Produto Esgotado" : "Adicionar ao Carrinho"}
             </button>
           </div>
         </div>

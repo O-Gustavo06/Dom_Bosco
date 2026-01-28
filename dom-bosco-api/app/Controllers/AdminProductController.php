@@ -3,6 +3,11 @@
 require_once __DIR__ . '/../Models/Product.php';
 require_once __DIR__ . '/../Utils/JWT.php';
 
+/**
+ * @var JWT
+ */
+use JWT;
+
 class AdminProductController
 {
     private Product $product;
@@ -217,11 +222,15 @@ class AdminProductController
      */
     public function delete(int $id): void
     {
+        error_log("=== DELETAR PRODUTO ===");
+        error_log("ID recebido: " . $id);
+
         $this->ensureAdmin();
 
         $product = $this->product->getById($id);
 
         if (!$product) {
+            error_log("Produto não encontrado: " . $id);
             http_response_code(404);
             echo json_encode([
                 'error' => 'Produto não encontrado'
@@ -230,12 +239,16 @@ class AdminProductController
         }
 
         try {
-            $this->product->delete($id);
+            error_log("Tentando deletar produto: " . $product['name']);
+            $result = $this->product->delete($id);
+            error_log("Resultado da deleção: " . ($result ? 'sucesso' : 'falha'));
 
+            http_response_code(200);
             echo json_encode([
                 'message' => 'Produto deletado com sucesso'
             ]);
         } catch (Exception $e) {
+            error_log("Erro ao deletar: " . $e->getMessage());
             http_response_code(400);
             echo json_encode([
                 'error' => $e->getMessage()

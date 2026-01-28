@@ -8,11 +8,15 @@ function getImageUrl(product) {
 
   let imageField = null;
 
-  // PRIORIDADE 1: Campo "Image" (com I maiúsculo) - campo do banco de dados
-  if (product.Image) {
+  // PRIORIDADE 1: Campo "image" (com i minúsculo) - campo do banco de dados
+  if (product.image) {
+    imageField = product.image;
+  }
+  // PRIORIDADE 2: Campo "Image" (com I maiúsculo) - fallback
+  else if (product.Image) {
     imageField = product.Image;
   }
-  // PRIORIDADE 2: Campo "imagens" (plural) - caso tenha múltiplas imagens
+  // PRIORIDADE 3: Campo "imagens" (plural) - caso tenha múltiplas imagens
   else if (product.imagens) {
     // Se for array, pega o primeiro elemento
     if (Array.isArray(product.imagens)) {
@@ -41,13 +45,25 @@ function getImageUrl(product) {
       imageField = product.imagens;
     }
   }
-  // PRIORIDADE 3: Campos alternativos (fallback para compatibilidade)
+  // PRIORIDADE 4: Campos alternativos (fallback para compatibilidade)
   else {
-    imageField = product.image || product.image_url || product.imageUrl || product.imagem;
+    imageField = product.image_url || product.imageUrl || product.imagem;
   }
   
   if (!imageField) {
     return null;
+  }
+
+  // Se for um array JSON em string (ex: ["img1.jpg", "img2.jpg"])
+  if (typeof imageField === 'string' && imageField.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(imageField);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        imageField = parsed[0];
+      }
+    } catch (e) {
+      // Ignora erro de parse e continua com a string original
+    }
   }
 
   // Limpa espaços em branco
@@ -71,12 +87,29 @@ function ProductCard({ product }) {
   const { addToCart } = useCart();
   const [imageError, setImageError] = useState(false);
   const imageUrl = getImageUrl(product);
+  
+  // Verifica se o produto tem múltiplas imagens
+  const hasMultipleImages = () => {
+    if (!product.image) return false;
+    
+    if (typeof product.image === 'string' && product.image.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(product.image);
+        return Array.isArray(parsed) && parsed.length > 1;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  };
+  
+  const multipleImages = hasMultipleImages();
 
   // Debug: Log apenas no primeiro produto
   useEffect(() => {
     if (product && product.id === 1) {
       console.log("🔍 ProductCard - Produto recebido:", product);
-      console.log("🔍 ProductCard - Campo Image:", product.Image);
+      console.log("🔍 ProductCard - Campo image:", product.image);
       console.log("🔍 ProductCard - URL da imagem gerada:", imageUrl);
     }
   }, [product, imageUrl]);
@@ -130,25 +163,31 @@ function ProductCard({ product }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: "80%",
-              height: "80%",
             }}
           >
             📦
           </div>
         )}
         
-        <div
-          className="featured-badge"
-          style={{
+        {/* Badge de múltiplas imagens */}
+        {multipleImages && !imageError && (
+          <div style={{
             position: "absolute",
-            top: "12px",
-            left: "12px",
-            zIndex: 10,
-          }}
-        >
-          Destaque
-        </div>
+            top: "8px",
+            left: "8px",
+            backgroundColor: "rgba(124, 58, 237, 0.9)",
+            color: "white",
+            padding: "4px 8px",
+            borderRadius: "4px",
+            fontSize: "11px",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+          }}>
+            🖼️ Múltiplas
+          </div>
+        )}
       </div>
 
       {/* CONTEÚDO */}

@@ -4,13 +4,16 @@ require_once __DIR__ . '/../../config/database.php';
 
 class User
 {
+    protected $table = 'users';
+    protected $fillable = ['name', 'email', 'password', 'role'];
+    protected $hidden = ['password'];
+    
     private PDO $pdo;
-
-    private const ROLES = ['admin', 'user'];
+    private const ROLES = ['admin', 'customer'];
 
     public function __construct()
     {
-        $this->pdo = Database::connect();
+        $this->pdo = Database::connection();
     }
 
     /* ==========================
@@ -74,7 +77,7 @@ class User
         string $name,
         string $email,
         string $password,
-        string $role = 'user'
+        string $role = 'customer'
     ): int {
         $this->validateUserData($email, $password, $role);
 
@@ -195,7 +198,7 @@ class User
         }
 
         if (!in_array($role, self::ROLES, true)) {
-            throw new Exception('Role inválido. Use: admin ou user');
+            throw new Exception('Role inválido. Use: admin ou customer');
         }
     }
 

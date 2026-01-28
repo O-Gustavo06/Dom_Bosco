@@ -3,6 +3,11 @@
 require_once __DIR__ . '/../Models/User.php';
 require_once __DIR__ . '/../Utils/JWT.php';
 
+/**
+ * @var JWT
+ */
+use JWT;
+
 class AdminUserController
 {
     private User $user;
@@ -76,17 +81,17 @@ class AdminUserController
             return;
         }
 
-        $role = $data['role'] ?? 'user';
+        $role = $data['role'] ?? 'customer';
 
         // Apenas admin pode criar outro admin
         if ($role === 'admin') {
             $this->ensureAdmin();
         }
 
-        if (!in_array($role, ['user', 'admin'], true)) {
+        if (!in_array($role, ['customer', 'admin'], true)) {
             http_response_code(400);
             echo json_encode([
-                'error' => 'Role inválido. Use: user ou admin'
+                'error' => 'Role inválido. Use: customer ou admin'
             ]);
             return;
         }
@@ -145,7 +150,7 @@ class AdminUserController
 
             if (
                 array_key_exists('role', $data) &&
-                in_array($data['role'], ['user', 'admin'], true)
+                in_array($data['role'], ['customer', 'admin'], true)
             ) {
                 $updateData['role'] = $data['role'];
             }

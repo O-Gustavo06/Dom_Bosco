@@ -1,83 +1,95 @@
 <?php
 
-require_once __DIR__ . '/../app/Controllers/ProductController.php';
-require_once __DIR__ . '/../app/Controllers/OrderController.php';
-require_once __DIR__ . '/../app/Controllers/UserController.php';
-require_once __DIR__ . '/../app/Controllers/AdminProductController.php';
-require_once __DIR__ . '/../app/Controllers/AdminUserController.php';
-require_once __DIR__ . '/../app/Controllers/SettingsController.php';
+/**
+ * API Routes - Dom Bosco API
+ * Versão Laravel-style com namespaces e middleware
+ */
+
+// Desabilitar display de erros HTML
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+require_once __DIR__ . '/../app/Http/Controllers/Api/AuthController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/ProductController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/OrderController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/SettingsController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/ProductController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/UserController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/OrderController.php';
 require_once __DIR__ . '/../app/Controllers/ImageController.php';
-require_once __DIR__ . '/../app/Controllers/InventoryController.php';
+require_once __DIR__ . '/../app/Http/Middleware/Cors.php';
 require_once __DIR__ . '/../config/database.php';
+
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\SettingsController;
+use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
+use App\Http\Middleware\Cors;
+
+try {
+
+// Aplicar CORS em todas as requisições
+Cors::handle();
 
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
 header('Content-Type: application/json');
 
-
+// Instanciar controllers
+$authController         = new AuthController();
 $productController      = new ProductController();
 $orderController        = new OrderController();
-$userController         = new UserController();
+$settingsController     = new SettingsController();
 $adminProductController = new AdminProductController();
 $adminUserController    = new AdminUserController();
-$settingsController     = new SettingsController();
-$imageController        = new ImageController();
-$inventoryController    = new InventoryController();
+$adminOrderController   = new AdminOrderController();
+$imageController        = new \ImageController();
 
-// Rotas de admin para usuários
-if ($method === 'GET' && $uri === '/api/admin/users') {
-    $adminUserController->index();
-    exit;
-}
-if ($method === 'POST' && $uri === '/api/admin/users') {
-    $adminUserController->store();
-    exit;
-}
-if ($method === 'PUT' && preg_match('#^/api/admin/users/(\d+)$#', $uri, $m)) {
-    $adminUserController->update((int) $m[1]);
-    exit;
-}
-if ($method === 'DELETE' && preg_match('#^/api/admin/users/(\d+)$#', $uri, $m)) {
-    $adminUserController->delete((int) $m[1]);
+// ==========================================
+// ROTAS PÚBLICAS
+// ==========================================
+
+// Autenticação
+if ($method === 'POST' && $uri === '/api/register') {
+    $authController->register();
     exit;
 }
 
-// Rotas de admin para configurações
-if ($method === 'GET' && $uri === '/api/settings') {
-    $settingsController->index();
-    exit;
-}
-if ($method === 'PUT' && $uri === '/api/settings') {
-    $settingsController->update();
+if ($method === 'POST' && $uri === '/api/login') {
+    $authController->login();
     exit;
 }
 
+// Produtos (público)
 if ($method === 'GET' && $uri === '/api/products') {
     $productController->index();
     exit;
 }
 
-if ($method === 'GET' && preg_match('#^/api/products/(\d+)$#', $uri, $m)) {
-    $productController->show((int) $m[1]);
+if ($method === 'GET' && preg_match('#^/api/products/(\d+)$#', $uri, $matches)) {
+    $productController->show((int) $matches[1]);
     exit;
 }
 
+// Pedidos
 if ($method === 'POST' && $uri === '/api/orders') {
     $orderController->store();
     exit;
 }
 
-if ($method === 'POST' && $uri === '/api/register') {
-    $userController->register();
+// Settings (leitura pública)
+if ($method === 'GET' && $uri === '/api/settings') {
+    $settingsController->index();
     exit;
 }
 
-if ($method === 'POST' && $uri === '/api/login') {
-    $userController->login();
-    exit;
-}
-
+// ==========================================
+// ROTAS ADMIN - PRODUTOS
+// ==========================================
 
 if ($method === 'GET' && $uri === '/api/admin/products') {
     $adminProductController->index();
@@ -89,13 +101,65 @@ if ($method === 'POST' && $uri === '/api/admin/products') {
     exit;
 }
 
-if ($method === 'PUT' && preg_match('#^/api/admin/products/(\d+)$#', $uri, $m)) {
-    $adminProductController->update((int) $m[1]);
+if ($method === 'PUT' && preg_match('#^/api/admin/products/(\d+)$#', $uri, $matches)) {
+    $adminProductController->update((int) $matches[1]);
     exit;
 }
 
-if ($method === 'DELETE' && preg_match('#^/api/admin/products/(\d+)$#', $uri, $m)) {
-    $adminProductController->delete((int) $m[1]);
+if ($method === 'DELETE' && preg_match('#^/api/admin/products/(\d+)$#', $uri, $matches)) {
+    $adminProductController->destroy((int) $matches[1]);
+    exit;
+}
+
+// ==========================================
+// ROTAS ADMIN - USUÁRIOS
+// ==========================================
+
+if ($method === 'GET' && $uri === '/api/admin/users') {
+    $adminUserController->index();
+    exit;
+}
+
+if ($method === 'POST' && $uri === '/api/admin/users') {
+    $adminUserController->store();
+    exit;
+}
+
+if ($method === 'PUT' && preg_match('#^/api/admin/users/(\d+)$#', $uri, $matches)) {
+    $adminUserController->update((int) $matches[1]);
+    exit;
+}
+
+if ($method === 'DELETE' && preg_match('#^/api/admin/users/(\d+)$#', $uri, $matches)) {
+    $adminUserController->destroy((int) $matches[1]);
+    exit;
+}
+
+// ==========================================
+// ROTAS ADMIN - PEDIDOS
+// ==========================================
+
+if ($method === 'GET' && $uri === '/api/admin/orders') {
+    $adminOrderController->index();
+    exit;
+}
+
+if ($method === 'GET' && preg_match('#^/api/admin/orders/(\d+)$#', $uri, $matches)) {
+    $adminOrderController->show((int) $matches[1]);
+    exit;
+}
+
+if ($method === 'PUT' && preg_match('#^/api/admin/orders/(\d+)/status$#', $uri, $matches)) {
+    $adminOrderController->updateStatus((int) $matches[1]);
+    exit;
+}
+
+// ==========================================
+// ROTAS ADMIN - SETTINGS
+// ==========================================
+
+if ($method === 'PUT' && $uri === '/api/settings') {
+    $settingsController->update();
     exit;
 }
 
@@ -221,8 +285,19 @@ if ($method === 'DELETE' && preg_match('#^/api/admin/inventory/(\d+)$#', $uri, $
     exit;
 }
 
-
 http_response_code(404);
 echo json_encode([
     'error' => 'Rota não encontrada'
 ]);
+
+} catch (Throwable $e) {
+    error_log("Erro fatal na API: " . $e->getMessage() . " em " . $e->getFile() . ":" . $e->getLine());
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'error' => 'Erro interno do servidor',
+        'message' => $e->getMessage(),
+        'file' => basename($e->getFile()),
+        'line' => $e->getLine()
+    ]);
+}

@@ -4,6 +4,8 @@ require_once __DIR__ . '/../Models/Image.php';
 require_once __DIR__ . '/../Utils/JWT.php';
 require_once __DIR__ . '/../Utils/Logger.php';
 
+use App\Utils\JWT;
+
 class ImageController
 {
     private Image $image;
@@ -123,9 +125,21 @@ class ImageController
                 'product_id' => $productId
             ]);
         } catch (\Throwable $e) {
-            $this->logger->exception($e, 'Exceção durante upload de imagem');
+            $this->logger->error('Exceção durante upload de imagem', [
+                'user_id' => $userId ?? 'unknown',
+                'product_id' => $productId ?? 'unknown',
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             http_response_code(500);
-            echo json_encode(['error' => 'Erro interno do servidor']);
+            echo json_encode([
+                'error' => 'Erro interno do servidor',
+                'details' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
         }
     }
 

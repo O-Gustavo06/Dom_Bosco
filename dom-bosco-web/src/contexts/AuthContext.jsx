@@ -10,10 +10,36 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     if (savedToken) {
-      setToken(savedToken);
-      const savedUser = localStorage.getItem("user");
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+      // Verifica se o token ainda é válido
+      try {
+        const tokenParts = savedToken.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          const expirationTime = payload.exp * 1000; // Converter para milissegundos
+          
+          if (expirationTime < Date.now()) {
+            // Token expirado, limpar localStorage
+            console.log("Token expirado detectado, limpando...");
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            setToken(null);
+            setUser(null);
+          } else {
+            // Token válido
+            setToken(savedToken);
+            const savedUser = localStorage.getItem("user");
+            if (savedUser) {
+              setUser(JSON.parse(savedUser));
+            }
+          }
+        }
+      } catch (error) {
+        // Token inválido, limpar
+        console.error("Erro ao validar token:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setToken(null);
+        setUser(null);
       }
     }
     setLoading(false);

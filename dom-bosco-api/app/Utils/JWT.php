@@ -1,10 +1,16 @@
 <?php
 
+namespace App\Utils;
+
 class JWT
 {
-    private static string $SECRET = 'sua_chave_secreta_super_segura_2024';
+    private static function getSecret(): string
+    {
+        return $_ENV['JWT_SECRET'] ?? 'dombosco_jwt_secret_key_2026_secure_token';
+    }
+    
     private const ALG = 'HS256';
-    private const TOKEN_TTL = 86400; // 24 horas
+    private const TOKEN_TTL = 2592000; // 30 dias em segundos
 
     private static function logDebug(string $message): void
     {
@@ -77,7 +83,7 @@ class JWT
             }
 
             return $decodedPayload;
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             self::logDebug("verify: exceção - " . $e->getMessage() . " token={$token}");
             return null;
         }
@@ -127,7 +133,7 @@ class JWT
     private static function sign(string $data): string
     {
         return self::base64UrlEncode(
-            hash_hmac('sha256', $data, self::$SECRET, true)
+            hash_hmac('sha256', $data, self::getSecret(), true)
         );
     }
 

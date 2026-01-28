@@ -3,6 +3,11 @@
 require_once __DIR__ . '/../Models/User.php';
 require_once __DIR__ . '/../Utils/JWT.php';
 
+/**
+ * @var JWT
+ */
+use JWT;
+
 class AuthController
 {
     private User $user;
@@ -47,7 +52,7 @@ class AuthController
                 trim($data['name']),
                 strtolower(trim($data['email'])),
                 $data['password'],
-                'user'
+                'customer'
             );
 
             $user = $this->user->getById($userId);

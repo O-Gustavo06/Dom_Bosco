@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import AdminProducts from "./AdminProducts";
 import AdminUsers from "./AdminUsers";
 import AdminSettings from "./AdminSettings";
+import AdminOrders from "./AdminOrders";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("products");
 
-  if (user?.role !== "admin") {
+  // Verifica se o token existe e se o usuário é admin
+  useEffect(() => {
+    if (!token || !user) {
+      navigate("/login");
+    } else if (user?.role !== "admin") {
+      navigate("/");
+    }
+  }, [token, user, navigate]);
+
+  if (!user || user?.role !== "admin") {
     return (
       <div style={{ padding: "40px", textAlign: "center" }}>
         <h2>Acesso Negado</h2>
@@ -88,6 +98,26 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => setActiveTab("orders")}
+            style={{
+              width: "100%",
+              padding: "12px 16px",
+              textAlign: "left",
+              backgroundColor: activeTab === "orders" ? "#7c3aed" : "transparent",
+              color: activeTab === "orders" ? "white" : "var(--text-primary)",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              marginBottom: "8px",
+              fontSize: "16px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+            }}
+          >
+            🛒 Pedidos
+          </button>
+
+          <button
             onClick={() => setActiveTab("settings")}
             style={{
               width: "100%",
@@ -133,6 +163,7 @@ export default function Dashboard() {
       <main style={{ flex: 1, overflow: "auto" }}>
         {activeTab === "products" && <AdminProducts />}
         {activeTab === "users" && <AdminUsers />}
+        {activeTab === "orders" && <AdminOrders />}
         {activeTab === "settings" && <AdminSettings />}
       </main>
     </div>

@@ -1,0 +1,23 @@
+{
+    "intelephense.files.exclude": [
+        "**/node_modules/**",
+        "**/vendor/**",
+        "**/.git/**",
+        "**/.svn/**",
+        "**/.hg/**",
+        "**/CVS/**",
+        "**/.DS_Store/**",
+        "**/database/migrations/**"
+    ],
+    "intelephense.stubs": [
+        "Core",
+        "PDO",
+        "standard"
+    ],
+    "intelephense.diagnostics.undefinedTypes": false,
+    "intelephense.diagnostics.undefinedFunctions": false,
+    "intelephense.diagnostics.undefinedConstants": false,
+    "intelephense.diagnostics.undefinedClassConstants": false,
+    "intelephense.diagnostics.undefinedMethods": false,
+    "intelephense.diagnostics.undefinedProperties": false
+}
