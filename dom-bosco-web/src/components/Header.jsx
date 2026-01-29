@@ -29,6 +29,7 @@ function Header() {
       const data = await response.json();
       
       setContactInfo({
+        instagram: data.contact_instagram || "https://www.instagram.com/papelaria.dombosco/",
         phone: data.contact_phone || "(14) 3402-5500",
         whatsapp: data.contact_whatsapp || "(14) 99674-1119",
         email: data.contact_email || "atendimento@dombosco.com.br",
@@ -344,6 +345,39 @@ function Header() {
                   }}
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <a
+                      href={contactInfo.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "12px",
+                        color: "var(--text-primary)",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        textDecoration: "none",
+                        transition: "all 0.3s ease",
+                        cursor: "pointer"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = isDark ? "rgba(168, 85, 247, 0.1)" : "rgba(124, 58, 237, 0.05)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <span style={{ fontSize: "24px" }}>📱</span>
+                      <div>
+                        <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                          Siga nosso Instagram
+                        </div>
+                        <div style={{ fontWeight: "700", fontSize: "16px", color: "#a855f7" }}>
+                          @dombosco
+                        </div>
+                      </div>
+                    </a>
+
                     <div
                       style={{
                         display: "flex",
