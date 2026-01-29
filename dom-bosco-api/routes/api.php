@@ -163,6 +163,11 @@ if ($method === 'PUT' && $uri === '/api/settings') {
     exit;
 }
 
+if ($method === 'PUT' && $uri === '/api/admin/settings') {
+    $settingsController->update();
+    exit;
+}
+
 
 if ($method === 'POST' && $uri === '/api/admin/images/upload') {
     $imageController->upload();

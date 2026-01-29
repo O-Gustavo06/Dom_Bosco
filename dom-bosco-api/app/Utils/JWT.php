@@ -24,9 +24,7 @@ class JWT
         @file_put_contents($logFile, "[{$time}] {$message}\n", FILE_APPEND | LOCK_EX);
     }
 
-    /**
-     * Gera um token JWT
-     */
+    
     public static function generate(array $payload): string
     {
         $header = [
@@ -45,9 +43,7 @@ class JWT
         return "$encodedHeader.$encodedPayload.$signature";
     }
 
-    /**
-     * Valida e decodifica um token JWT
-     */
+    
     public static function verify(string $token): ?array
     {
         try {
@@ -89,9 +85,7 @@ class JWT
         }
     }
 
-    /**
-     * Extrai o token do header Authorization
-     */
+    
     public static function getTokenFromHeader(): ?string
     {
         $headers = [];

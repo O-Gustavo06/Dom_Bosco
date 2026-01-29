@@ -18,10 +18,7 @@ class Product
        CONSULTAS
        ========================== */
 
-    /**
-     * PRODUTOS PÚBLICOS
-     * Retorna apenas produtos ativos com estoque >= 5
-     */
+    
     public function getAll(): array
     {
         $sql = '
@@ -48,9 +45,7 @@ class Product
             ->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * PRODUTOS (ADMIN – SEM FILTRO)
-     */
+    
     public function getAllAdmin(): array
     {
         $sql = '
@@ -77,9 +72,7 @@ class Product
             ->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * BUSCAR PRODUTO POR ID
-     */
+    
     public function getById(int $id): ?array
     {
         $stmt = $this->pdo->prepare('
@@ -113,9 +106,7 @@ class Product
        ESCRITA
        ========================== */
 
-    /**
-     * CRIAR PRODUTO
-     */
+    
     public function create(array $data): int
     {
         $stmt = $this->pdo->prepare(
@@ -137,9 +128,7 @@ class Product
         return (int) $this->pdo->lastInsertId();
     }
 
-    /**
-     * ATUALIZAR PRODUTO
-     */
+    
     public function update(int $id, array $data): bool
     {
         $stmt = $this->pdo->prepare(
@@ -166,24 +155,19 @@ class Product
         ]);
     }
 
-    /**
-     * DELETAR PRODUTO
-     * Remove todas as dependências antes de deletar o produto
-     */
+    
     public function delete(int $id): bool
     {
         $this->pdo->beginTransaction();
 
         try {
-            // 1. Deletar inventário do produto
+
             $stmt = $this->pdo->prepare('DELETE FROM inventory WHERE product_id = :id');
             $stmt->execute([':id' => $id]);
 
-            // 2. Deletar itens de pedidos do produto
             $stmt = $this->pdo->prepare('DELETE FROM order_items WHERE product_id = :id');
             $stmt->execute([':id' => $id]);
 
-            // 3. Finalmente deletar o produto
             $stmt = $this->pdo->prepare('DELETE FROM products WHERE id = :id');
             $stmt->execute([':id' => $id]);
 
@@ -196,14 +180,10 @@ class Product
         }
     }
 
-    /**
-     * AUTO-INATIVAR PRODUTO BASEADO NO ESTOQUE
-     * Inativa automaticamente o produto se o estoque for <= 5
-     * Reativa automaticamente se o estoque voltar a ficar > 5
-     */
+    
     public function updateActiveStatusByStock(int $productId): bool
     {
-        // Busca a quantidade em estoque
+
         $stmt = $this->pdo->prepare('
             SELECT COALESCE(i.quantity, 0) as quantity
             FROM products p
@@ -220,7 +200,6 @@ class Product
         $quantity = (int) $result['quantity'];
         $shouldBeActive = $quantity > 5 ? 1 : 0;
 
-        // Atualiza o status do produto
         $stmt = $this->pdo->prepare('
             UPDATE products 
             SET active = :active 
@@ -233,13 +212,10 @@ class Product
         ]);
     }
 
-    /**
-     * ATUALIZAR STATUS DE TODOS OS PRODUTOS BASEADO NO ESTOQUE
-     * Útil para sincronizar todos os produtos de uma vez
-     */
+    
     public function updateAllActiveStatusByStock(): int
     {
-        // Inativa produtos com estoque <= 5
+
         $stmt = $this->pdo->query('
             UPDATE products
             SET active = 0
@@ -252,7 +228,6 @@ class Product
         ');
         $inactivated = $stmt->rowCount();
 
-        // Reativa produtos com estoque > 5
         $stmt = $this->pdo->query('
             UPDATE products
             SET active = 1

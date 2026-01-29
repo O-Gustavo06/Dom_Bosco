@@ -4,7 +4,6 @@ class SettingsController
 {
 	public function index()
 	{
-		// Retornar configurações (exemplo)
 		echo json_encode([
 			'site_name' => 'Dom Bosco',
 			'maintenance_mode' => false
@@ -13,7 +12,6 @@ class SettingsController
 
 	public function update()
 	{
-		// Atualizar configurações (exemplo)
 		echo json_encode([
 			'success' => true,
 			'message' => 'Configurações atualizadas com sucesso!'

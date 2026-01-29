@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useState, useEffect } from "react";
 
 function Header() {
   const location = useLocation();
@@ -9,6 +10,34 @@ function Header() {
   const { isDark, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
+
+  const [showContact, setShowContact] = useState(false);
+  const [contactInfo, setContactInfo] = useState({
+    phone: "",
+    whatsapp: "",
+    email: "",
+    workingHours: ""
+  });
+
+  useEffect(() => {
+    fetchContactInfo();
+  }, []);
+
+  const fetchContactInfo = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/settings");
+      const data = await response.json();
+      
+      setContactInfo({
+        phone: data.contact_phone || "(14) 3402-5500",
+        whatsapp: data.contact_whatsapp || "(14) 99674-1119",
+        email: data.contact_email || "atendimento@dombosco.com.br",
+        workingHours: data.contact_hours || "Segunda a Sexta: 08:00 - 18:00 | Sábado: 08:00 - 12:00"
+      });
+    } catch (error) {
+      console.error("Erro ao carregar informações de contato:", error);
+    }
+  };
 
   const isActive = (path) => location.pathname === path;
 
@@ -246,6 +275,166 @@ function Header() {
             </Link>
           )}
 
+          <div style={{ position: "relative", marginLeft: "12px" }}>
+            <button
+              onClick={() => setShowContact(!showContact)}
+              style={{
+                backgroundColor: "transparent",
+                border: "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                color: "var(--text-primary)",
+                fontSize: "15px",
+                fontWeight: "500",
+                transition: "all 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(124, 58, 237, 0.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              <div style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "#17a2b8",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "18px",
+                fontWeight: "700"
+              }}>
+                ?
+              </div>
+              <span>Atendimento</span>
+            </button>
+
+            {showContact && (
+              <>
+                <div
+                  onClick={() => setShowContact(false)}
+                  style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 999
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    right: 0,
+                    width: "400px",
+                    background: isDark ? "#1f2937" : "#ffffff",
+                    borderRadius: "12px",
+                    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.15)",
+                    padding: "24px",
+                    zIndex: 1000,
+                    animation: "slideDown 0.3s ease"
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "12px",
+                        color: "var(--text-primary)",
+                        padding: "12px",
+                        borderRadius: "8px"
+                      }}
+                    >
+                      <span style={{ fontSize: "24px" }}>📞</span>
+                      <div>
+                        <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                          Compre por telefone
+                        </div>
+                        <div style={{ fontWeight: "700", fontSize: "16px", color: "#ffffff" }}>
+                          {contactInfo.phone}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "12px",
+                        color: "var(--text-primary)",
+                        padding: "12px",
+                        borderRadius: "8px"
+                      }}
+                    >
+                      <span style={{ fontSize: "24px" }}>💬</span>
+                      <div>
+                        <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                          Fale no WhatsApp
+                        </div>
+                        <div style={{ fontWeight: "700", fontSize: "16px", color: "#ffffff" }}>
+                          {contactInfo.whatsapp}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "12px",
+                        color: "var(--text-primary)",
+                        padding: "12px",
+                        borderRadius: "8px"
+                      }}
+                    >
+                      <span style={{ fontSize: "24px" }}>✉️</span>
+                      <div>
+                        <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>
+                          Envie um e-mail
+                        </div>
+                        <div style={{ fontWeight: "700", fontSize: "15px", color: "#ffffff", wordBreak: "break-all" }}>
+                          {contactInfo.email}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        padding: "16px 12px",
+                        background: isDark ? "rgba(251, 191, 36, 0.05)" : "#f8f9fa",
+                        borderRadius: "8px",
+                        marginTop: "8px"
+                      }}
+                    >
+                      <div style={{ 
+                        fontSize: "13px", 
+                        fontWeight: "700", 
+                        color: "var(--text-primary)",
+                        marginBottom: "8px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px"
+                      }}>
+                        HORÁRIO DE ATENDIMENTO
+                      </div>
+                      <div style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: "1.5" }}>
+                        {contactInfo.workingHours}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <button
             onClick={toggleTheme}
             style={{
@@ -259,7 +448,7 @@ function Header() {
               alignItems: "center",
               justifyContent: "center",
               transition: "all 0.3s ease",
-              marginLeft: "12px",
+              marginLeft: "8px",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "var(--surface-hover)";

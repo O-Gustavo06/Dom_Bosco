@@ -11,9 +11,7 @@ class Settings
         $this->pdo = Database::connection();
     }
 
-    /**
-     * Buscar todas as configurações
-     */
+    
     public function getAll(): array
     {
         $stmt = $this->pdo->query("SELECT setting_key, setting_value FROM settings");
@@ -27,9 +25,7 @@ class Settings
         return $settings;
     }
 
-    /**
-     * Buscar uma configuração específica
-     */
+    
     public function get(string $key): ?string
     {
         $stmt = $this->pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = :key");
@@ -39,9 +35,7 @@ class Settings
         return $result ? $result['setting_value'] : null;
     }
 
-    /**
-     * Atualizar uma configuração
-     */
+    
     public function set(string $key, string $value): bool
     {
         $stmt = $this->pdo->prepare("
@@ -57,9 +51,7 @@ class Settings
         ]);
     }
 
-    /**
-     * Atualizar múltiplas configurações
-     */
+    
     public function setMultiple(array $settings): bool
     {
         $this->pdo->beginTransaction();
@@ -78,9 +70,7 @@ class Settings
         }
     }
 
-    /**
-     * Deletar uma configuração
-     */
+    
     public function delete(string $key): bool
     {
         $stmt = $this->pdo->prepare("DELETE FROM settings WHERE setting_key = :key");

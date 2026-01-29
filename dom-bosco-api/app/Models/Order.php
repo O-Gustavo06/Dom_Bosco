@@ -11,9 +11,7 @@ class Order
         $this->pdo = Database::connection();
     }
 
-    /**
-     * Buscar todos os pedidos com filtros
-     */
+    
     public function getAllWithFilters(string $filter = 'all', ?string $startDate = null, ?string $endDate = null): array
     {
         $query = "
@@ -34,7 +32,6 @@ class Order
         $whereConditions = [];
         $params = [];
 
-        // Aplicar filtros de período
         if ($filter !== 'all') {
             switch ($filter) {
                 case 'today':
@@ -52,7 +49,6 @@ class Order
             }
         }
 
-        // Filtro personalizado por data
         if ($startDate) {
             $whereConditions[] = "DATE(o.created_at) >= :start_date";
             $params[':start_date'] = $startDate;
@@ -74,15 +70,12 @@ class Order
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Buscar estatísticas dos pedidos
-     */
+    
     public function getStatistics(string $filter = 'all', ?string $startDate = null, ?string $endDate = null): array
     {
         $whereConditions = [];
         $params = [];
 
-        // Aplicar filtros de período
         if ($filter !== 'all') {
             switch ($filter) {
                 case 'today':
@@ -100,7 +93,6 @@ class Order
             }
         }
 
-        // Filtro personalizado por data
         if ($startDate) {
             $whereConditions[] = "DATE(created_at) >= :start_date";
             $params[':start_date'] = $startDate;
@@ -131,9 +123,7 @@ class Order
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /**
-     * Buscar pedido por ID com itens
-     */
+    
     public function getById(int $id): ?array
     {
         $stmt = $this->pdo->prepare("
@@ -157,7 +147,6 @@ class Order
             return null;
         }
 
-        // Buscar itens do pedido
         $itemsStmt = $this->pdo->prepare("
             SELECT 
                 oi.id,
@@ -177,9 +166,7 @@ class Order
         return $order;
     }
 
-    /**
-     * Atualizar status do pedido
-     */
+    
     public function updateStatus(int $id, string $status): bool
     {
         $stmt = $this->pdo->prepare("
@@ -199,11 +186,11 @@ class Order
         $this->pdo->beginTransaction();
 
         try {
-            // Se não houver user_id, criar ou buscar usuário guest baseado no email
+
             $userId = $data['user_id'] ?? null;
             
             if (!$userId && !empty($data['customer']['email'])) {
-                // Buscar ou criar usuário guest
+
                 $stmt = $this->pdo->prepare("
                     SELECT id FROM users WHERE email = :email
                 ");
@@ -213,7 +200,7 @@ class Order
                 if ($user) {
                     $userId = $user['id'];
                 } else {
-                    // Criar novo usuário guest
+
                     $insertUser = $this->pdo->prepare("
                         INSERT INTO users (name, email, password, role)
                         VALUES (:name, :email, :password, 'customer')
@@ -245,12 +232,11 @@ class Order
                 VALUES (:order_id, :product_id, :quantity, :price)
             ");
 
-            // Carregar o modelo de Inventory para decrementar o estoque
             require_once __DIR__ . '/Inventory.php';
             $inventoryModel = new Inventory();
 
             foreach ($data['items'] as $item) {
-                // Inserir item do pedido
+
                 $itemStmt->execute([
                     ':order_id'   => $orderId,
                     ':product_id' => $item['id'],
@@ -258,7 +244,6 @@ class Order
                     ':price'      => $item['price']
                 ]);
 
-                // Decrementar o estoque
                 $decremented = $inventoryModel->decrement($item['id'], $item['quantity']);
                 
                 if (!$decremented) {

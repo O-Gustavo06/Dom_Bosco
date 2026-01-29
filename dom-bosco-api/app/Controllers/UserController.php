@@ -3,9 +3,7 @@
 require_once __DIR__ . '/../Models/User.php';
 require_once __DIR__ . '/../Utils/JWT.php';
 
-/**
- * @var JWT
- */
+
 use JWT;
 
 class UserController
@@ -17,11 +15,7 @@ class UserController
         $this->user = new User();
     }
 
-    /**
-     * Cadastro de usuário
-     * - Emails @papelaria.com => admin
-     * - Demais emails => customer
-     */
+    
     public function register(): void
     {
         $rawInput = file_get_contents('php://input');
@@ -82,9 +76,7 @@ class UserController
         }
     }
 
-    /**
-     * Login - Retorna JWT
-     */
+    
     public function login(): void
     {
         $rawInput = file_get_contents('php://input');

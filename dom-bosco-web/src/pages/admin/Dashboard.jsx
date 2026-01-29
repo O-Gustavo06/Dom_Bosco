@@ -3,7 +3,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import AdminProducts from "./AdminProducts";
 import AdminUsers from "./AdminUsers";
-import AdminSettings from "./AdminSettings";
+import Settings from "./Settings";
 import AdminOrders from "./AdminOrders";
 
 export default function Dashboard() {
@@ -164,7 +164,7 @@ export default function Dashboard() {
         {activeTab === "products" && <AdminProducts />}
         {activeTab === "users" && <AdminUsers />}
         {activeTab === "orders" && <AdminOrders />}
-        {activeTab === "settings" && <AdminSettings />}
+        {activeTab === "settings" && <Settings />}
       </main>
     </div>
   );

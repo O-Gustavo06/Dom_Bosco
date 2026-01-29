@@ -217,12 +217,10 @@ class Image
             pathinfo($originalName, PATHINFO_EXTENSION)
         );
 
-        // Se o nome customizado for fornecido, sanitiza e usa ele
         if ($customName) {
-            // Remove a extensão do customName se já tiver
+
             $customNameWithoutExt = pathinfo($customName, PATHINFO_FILENAME);
-            
-            // Sanitiza o nome: remove caracteres especiais, mantém apenas letras, números, hífen e underscore
+
             $safeName = preg_replace('/[^a-zA-Z0-9\-_]/', '-', $customNameWithoutExt);
             $safeName = preg_replace('/-+/', '-', $safeName); // Remove hífens duplicados
             $safeName = trim($safeName, '-'); // Remove hífens no início e fim
@@ -232,7 +230,6 @@ class Image
             }
         }
 
-        // Fallback: gera nome único automático
         return uniqid('prod_', true) . '.' . $extension;
     }
 

@@ -10,7 +10,6 @@ class Logger
         $this->logDir = __DIR__ . '/../../storage/logs';
         $this->logFile = $this->logDir . '/' . $fileName;
         
-        // Cria o diretório de logs se não existir
         if (!is_dir($this->logDir)) {
             mkdir($this->logDir, 0755, true);
         }

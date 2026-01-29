@@ -73,7 +73,6 @@ class ImageController
             exit;
         }
 
-        // Verifica se o produto existe
         if (!$this->productExists((int) $productId)) {
             $this->logger->warning('Upload falhou: Produto não encontrado', [
                 'user_id' => $userId,
@@ -84,14 +83,12 @@ class ImageController
             exit;
         }
 
-        // Detalhes do arquivo para log
         $fileDetails = [
             'name' => $_FILES['image']['name'] ?? 'unknown',
             'size' => $_FILES['image']['size'] ?? 0,
             'type' => $_FILES['image']['type'] ?? 'unknown'
         ];
 
-        // Captura o nome customizado se fornecido
         $customName = $_POST['custom_name'] ?? null;
 
         try {
@@ -148,7 +145,6 @@ class ImageController
         $payload = $this->ensureAdmin();
         $userId = $payload['id'] ?? 'unknown';
 
-        // Verifica se o produto existe
         if (!$this->productExists($productId)) {
             $this->logger->warning('Listagem de imagens falhou: Produto não encontrado', [
                 'user_id' => $userId,
@@ -191,7 +187,6 @@ class ImageController
             'filename' => $filename
         ]);
 
-        // Validação adicional de segurança contra path traversal
         if (strpos($filename, '..') !== false || strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
             $this->logger->warning('Tentativa de path traversal detectada', [
                 'user_id' => $userId,
@@ -203,7 +198,6 @@ class ImageController
             exit;
         }
 
-        // Verifica se o produto existe
         if (!$this->productExists($productId)) {
             $this->logger->warning('Deleção falhou: Produto não encontrado', [
                 'user_id' => $userId,
@@ -249,9 +243,7 @@ class ImageController
         }
     }
 
-    /**
-     * Verifica se um produto existe no banco de dados
-     */
+    
     private function productExists(int $productId): bool
     {
         try {

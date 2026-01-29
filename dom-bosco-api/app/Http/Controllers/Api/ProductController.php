@@ -16,10 +16,7 @@ class ProductController
         $this->productModel = new \Product();
     }
 
-    /**
-     * Listar todos os produtos (público)
-     * GET /api/products
-     */
+    
     public function index(): void
     {
         try {
@@ -30,10 +27,7 @@ class ProductController
         }
     }
 
-    /**
-     * Ver detalhes de um produto (público)
-     * GET /api/products/{id}
-     */
+    
     public function show(int $id): void
     {
         try {

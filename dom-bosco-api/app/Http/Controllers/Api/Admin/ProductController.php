@@ -20,10 +20,7 @@ class ProductController
         $this->productModel = new \Product();
     }
 
-    /**
-     * Listar todos os produtos (admin)
-     * GET /api/admin/products
-     */
+    
     public function index(): void
     {
         $user = Authenticate::handle();
@@ -37,10 +34,7 @@ class ProductController
         }
     }
 
-    /**
-     * Criar novo produto (admin)
-     * POST /api/admin/products
-     */
+    
     public function store(): void
     {
         $user = Authenticate::handle();
@@ -48,7 +42,6 @@ class ProductController
 
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // Validações
         if (empty($data['name'])) {
             Response::error('Nome do produto é obrigatório');
         }
@@ -69,10 +62,7 @@ class ProductController
         }
     }
 
-    /**
-     * Atualizar produto (admin)
-     * PUT /api/admin/products/{id}
-     */
+    
     public function update(int $id): void
     {
         $user = Authenticate::handle();
@@ -80,7 +70,6 @@ class ProductController
 
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // Verifica se produto existe
         $product = $this->productModel->getById($id);
         if (!$product) {
             Response::notFound('Produto não encontrado');
@@ -96,16 +85,12 @@ class ProductController
         }
     }
 
-    /**
-     * Deletar produto (admin)
-     * DELETE /api/admin/products/{id}
-     */
+    
     public function destroy(int $id): void
     {
         $user = Authenticate::handle();
         CheckRole::admin($user);
 
-        // Verifica se produto existe
         $product = $this->productModel->getById($id);
         if (!$product) {
             Response::notFound('Produto não encontrado');

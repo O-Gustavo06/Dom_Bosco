@@ -15,20 +15,14 @@ class InventoryController
         $this->product = new Product();
     }
 
-    /**
-     * Lista todos os estoques
-     * GET /api/admin/inventory
-     */
+    
     public function index(): void
     {
         $data = $this->inventory->getAll();
         Response::json($data);
     }
 
-    /**
-     * Obtém estoque de um produto específico
-     * GET /api/admin/inventory/:productId
-     */
+    
     public function show(int $productId): void
     {
         $data = $this->inventory->getByProductId($productId);
@@ -41,11 +35,7 @@ class InventoryController
         Response::json($data);
     }
 
-    /**
-     * Cria um registro de estoque para um produto
-     * POST /api/admin/inventory
-     * Body: { product_id, quantity, min_quantity }
-     */
+    
     public function store(): void
     {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -59,14 +49,12 @@ class InventoryController
         $quantity = isset($data['quantity']) ? (int) $data['quantity'] : 0;
         $minQuantity = isset($data['min_quantity']) ? (int) $data['min_quantity'] : 5;
 
-        // Verifica se o produto existe
         $productExists = $this->product->getById($productId);
         if (!$productExists) {
             Response::json(['error' => 'Produto não encontrado'], 404);
             return;
         }
 
-        // Verifica se já existe estoque para este produto
         $existing = $this->inventory->getByProductId($productId);
         if ($existing) {
             Response::json(['error' => 'Já existe um registro de estoque para este produto'], 409);
@@ -86,11 +74,7 @@ class InventoryController
         }
     }
 
-    /**
-     * Atualiza a quantidade em estoque
-     * PUT /api/admin/inventory/:productId
-     * Body: { quantity }
-     */
+    
     public function update(int $productId): void
     {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -126,11 +110,7 @@ class InventoryController
         }
     }
 
-    /**
-     * Adiciona quantidade ao estoque (entrada)
-     * POST /api/admin/inventory/:productId/increment
-     * Body: { amount }
-     */
+    
     public function increment(int $productId): void
     {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -166,11 +146,7 @@ class InventoryController
         }
     }
 
-    /**
-     * Remove quantidade do estoque (saída manual)
-     * POST /api/admin/inventory/:productId/decrement
-     * Body: { amount }
-     */
+    
     public function decrement(int $productId): void
     {
         $data = json_decode(file_get_contents('php://input'), true);
@@ -215,20 +191,14 @@ class InventoryController
         }
     }
 
-    /**
-     * Obtém produtos com estoque baixo
-     * GET /api/admin/inventory/low-stock
-     */
+    
     public function lowStock(): void
     {
         $data = $this->inventory->getLowStock();
         Response::json($data);
     }
 
-    /**
-     * Deleta o registro de estoque
-     * DELETE /api/admin/inventory/:productId
-     */
+    
     public function delete(int $productId): void
     {
         $existing = $this->inventory->getByProductId($productId);
@@ -246,11 +216,7 @@ class InventoryController
         }
     }
 
-    /**
-     * Atualiza a quantidade mínima
-     * PATCH /api/admin/inventory/:productId/min-quantity
-     * Body: { min_quantity }
-     */
+    
     public function updateMinQuantity(int $productId): void
     {
         $data = json_decode(file_get_contents('php://input'), true);

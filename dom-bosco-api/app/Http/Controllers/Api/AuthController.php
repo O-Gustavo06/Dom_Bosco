@@ -18,33 +18,26 @@ class AuthController
         $this->userModel = new \User();
     }
 
-    /**
-     * Registro de novo usuário
-     * POST /api/register
-     */
+    
     public function register(): void
     {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // Validação de campos obrigatórios
         if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
             Response::error('Nome, email e senha são obrigatórios');
         }
 
-        // Validação de email
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             Response::error('Email inválido');
         }
 
-        // Validação de senha
         if (strlen($data['password']) < 6) {
             Response::error('Senha deve ter no mínimo 6 caracteres');
         }
 
         try {
             $email = strtolower(trim($data['email']));
-            
-            // Define role baseado no email
+
             $role = str_ends_with($email, '@papelaria.com') ? 'admin' : 'customer';
 
             $userId = $this->userModel->create(
@@ -76,15 +69,11 @@ class AuthController
         }
     }
 
-    /**
-     * Login de usuário
-     * POST /api/login
-     */
+    
     public function login(): void
     {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // Validação de campos obrigatórios
         if (empty($data['email']) || empty($data['password'])) {
             Response::error('Email e senha são obrigatórios');
         }

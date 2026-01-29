@@ -20,10 +20,7 @@ class OrderController
         $this->orderModel = new \Order();
     }
 
-    /**
-     * Listar todos os pedidos com filtros
-     * GET /api/admin/orders?filter=today|week|month|year&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
-     */
+    
     public function index(): void
     {
         $user = Authenticate::handle();
@@ -46,10 +43,7 @@ class OrderController
         }
     }
 
-    /**
-     * Buscar detalhes de um pedido específico
-     * GET /api/admin/orders/:id
-     */
+    
     public function show(int $id): void
     {
         $user = Authenticate::handle();
@@ -69,10 +63,7 @@ class OrderController
         }
     }
 
-    /**
-     * Atualizar status de um pedido
-     * PUT /api/admin/orders/:id/status
-     */
+    
     public function updateStatus(int $id): void
     {
         $user = Authenticate::handle();

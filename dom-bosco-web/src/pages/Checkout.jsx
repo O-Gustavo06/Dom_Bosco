@@ -2,6 +2,8 @@ import { useCart } from "../contexts/CartContext";
 import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { useTheme } from "../contexts/ThemeContext";
+import PaymentPix from "../components/PaymentPix";
+import PaymentCard from "../components/PaymentCard";
 
 function Checkout() {
   const { cart, total, clearCart } = useCart();
@@ -9,6 +11,8 @@ function Checkout() {
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentData, setPaymentData] = useState(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -26,6 +30,10 @@ function Checkout() {
     }));
   };
 
+  const handlePaymentDataChange = (data) => {
+    setPaymentData(data);
+  };
+
   async function handleCheckout(e) {
     e.preventDefault();
     setError("");
@@ -35,10 +43,22 @@ function Checkout() {
       return;
     }
 
-    // Validar campos obrigatórios
     if (!formData.name || !formData.email) {
       setError("Nome e email são obrigatórios!");
       return;
+    }
+
+    if (!paymentMethod) {
+      setError("Selecione um método de pagamento!");
+      return;
+    }
+
+    if (paymentMethod === "credit_card" && paymentData?.validateFn) {
+      const isValid = paymentData.validateFn();
+      if (!isValid) {
+        setError("Verifique os dados do cartão!");
+        return;
+      }
     }
 
     setLoading(true);
@@ -54,6 +74,20 @@ function Checkout() {
           city: formData.city,
           zipCode: formData.zipCode,
         },
+        payment: {
+          method: paymentMethod,
+          ...(paymentMethod === "credit_card" && paymentData && {
+            cardNumber: paymentData.cardNumber,
+            cardExpiry: paymentData.cardExpiry,
+            cardCvv: paymentData.cardCvv,
+            saveCard: paymentData.saveCard,
+            brand: paymentData.brand,
+            lastDigits: paymentData.lastDigits,
+          }),
+          ...(paymentMethod === "pix" && {
+            pixCode: paymentData?.pixCode
+          })
+        }
       };
 
       console.log("Enviando pedido:", payload);
@@ -78,7 +112,6 @@ function Checkout() {
         throw new Error(data.error || data.message || `Erro HTTP: ${response.status}`);
       }
 
-      // O backend retorna: { message: "...", data: { order_id: X } }
       const orderId = data.data?.order_id || data.order_id || data.id || data.orderId || data.order?.id;
       
       if (data.message || orderId) {
@@ -147,170 +180,273 @@ function Checkout() {
                 Dados de Entrega
               </h2>
 
-              <form onSubmit={handleCheckout}>
-                {error && (
-                  <div
-                    style={{
-                      padding: "12px 16px",
-                      backgroundColor: "#fee2e2",
-                      border: "1px solid #fca5a5",
-                      borderRadius: "8px",
-                      marginBottom: "20px",
-                      color: "#dc2626",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {error}
-                  </div>
-                )}
-
-                <div style={{ marginBottom: "16px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    Nome Completo
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Seu nome"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    style={{ width: "100%" }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: "16px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    E-mail
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="seu@email.com"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    style={{ width: "100%" }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: "16px" }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "#475569",
-                    }}
-                  >
-                    Endereço
-                  </label>
-                  <input
-                    type="text"
-                    name="address"
-                    placeholder="Rua, número, complemento"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    required
-                    style={{ width: "100%" }}
-                  />
-                </div>
-
+              {error && (
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 1fr",
-                    gap: "16px",
-                    marginBottom: "24px",
+                    padding: "12px 16px",
+                    backgroundColor: "#fee2e2",
+                    border: "1px solid #fca5a5",
+                    borderRadius: "8px",
+                    marginBottom: "20px",
+                    color: "#dc2626",
+                    fontSize: "14px",
                   }}
                 >
-                  <div>
-                    <label
-                      style={{
-                        display: "block",
-                        marginBottom: "8px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: "#475569",
-                      }}
-                    >
-                      Cidade
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      placeholder="Sua cidade"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      required
-                      style={{ width: "100%" }}
-                    />
-                  </div>
+                  {error}
+                </div>
+              )}
 
-                  <div>
-                    <label
-                      style={{
-                        display: "block",
-                        marginBottom: "8px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: "#475569",
-                      }}
-                    >
-                      CEP
-                    </label>
-                    <input
-                      type="text"
-                      name="zipCode"
-                      placeholder="00000-000"
-                      value={formData.zipCode}
-                      onChange={handleInputChange}
-                      required
-                      style={{ width: "100%" }}
-                    />
-                  </div>
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Nome Completo
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Seu nome"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  E-mail
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="seu@email.com"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Endereço
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  placeholder="Rua, número, complemento"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
+                  style={{ width: "100%" }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "2fr 1fr",
+                  gap: "16px",
+                  marginBottom: "24px",
+                }}
+              >
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    Cidade
+                  </label>
+                  <input
+                    type="text"
+                    name="city"
+                    placeholder="Sua cidade"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    required
+                    style={{ width: "100%" }}
+                  />
                 </div>
 
-                <button
-                  type="submit"
-                  className="success"
-                  disabled={loading}
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    CEP
+                  </label>
+                  <input
+                    type="text"
+                    name="zipCode"
+                    placeholder="00000-000"
+                    value={formData.zipCode}
+                    onChange={handleInputChange}
+                    required
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="card"
+              style={{
+                marginBottom: "24px",
+                padding: "32px",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "700",
+                  marginBottom: "28px",
+                  color: "var(--text-primary)",
+                }}
+              >
+                Método de Pagamento
+              </h2>
+
+              <div style={{ marginBottom: "24px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div
+                    onClick={() => setPaymentMethod("pix")}
+                    style={{
+                      padding: "20px",
+                      border: `2px solid ${paymentMethod === "pix" 
+                        ? (isDark ? "#a78bfa" : "#8b5cf6")
+                        : "var(--border-color)"}`,
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      background: paymentMethod === "pix"
+                        ? (isDark ? "rgba(167, 139, 250, 0.1)" : "rgba(139, 92, 246, 0.05)")
+                        : (isDark ? "#1a1a1a" : "#fff"),
+                      transition: "all 0.2s ease",
+                      textAlign: "center"
+                    }}
+                  >
+                    <div style={{ fontSize: "32px", marginBottom: "8px" }}>🔲</div>
+                    <div style={{ 
+                      fontWeight: "600", 
+                      fontSize: "16px",
+                      color: "var(--text-primary)",
+                      marginBottom: "4px"
+                    }}>
+                      PIX
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                      Aprovação imediata
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setPaymentMethod("credit_card")}
+                    style={{
+                      padding: "20px",
+                      border: `2px solid ${paymentMethod === "credit_card" 
+                        ? (isDark ? "#a78bfa" : "#8b5cf6")
+                        : "var(--border-color)"}`,
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      background: paymentMethod === "credit_card"
+                        ? (isDark ? "rgba(167, 139, 250, 0.1)" : "rgba(139, 92, 246, 0.05)")
+                        : (isDark ? "#1a1a1a" : "#fff"),
+                      transition: "all 0.2s ease",
+                      textAlign: "center"
+                    }}
+                  >
+                    <div style={{ fontSize: "32px", marginBottom: "8px" }}>💳</div>
+                    <div style={{ 
+                      fontWeight: "600", 
+                      fontSize: "16px",
+                      color: "var(--text-primary)",
+                      marginBottom: "4px"
+                    }}>
+                      Cartão de Crédito
+                    </div>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                      Parcelamento disponível
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {paymentMethod === "pix" && (
+                <PaymentPix onPaymentDataChange={handlePaymentDataChange} />
+              )}
+              
+              {paymentMethod === "credit_card" && (
+                <PaymentCard onPaymentDataChange={handlePaymentDataChange} />
+              )}
+
+              {!paymentMethod && (
+                <div 
                   style={{
-                    width: "100%",
-                    padding: "18px",
-                    fontSize: "18px",
-                    fontWeight: "700",
-                    background: loading
-                      ? "#94a3b8"
-                      : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                    boxShadow: loading
-                      ? "none"
-                      : "0 8px 24px rgba(16, 185, 129, 0.3)",
-                    cursor: loading ? "not-allowed" : "pointer",
-                    opacity: loading ? 0.7 : 1,
+                    padding: "32px",
+                    textAlign: "center",
+                    color: "var(--text-secondary)",
+                    fontSize: "14px"
                   }}
                 >
-                  {loading ? "Processando..." : "Finalizar Pedido →"}
-                </button>
-              </form>
+                  Selecione um método de pagamento acima
+                </div>
+              )}
             </div>
+
+            <button
+              onClick={handleCheckout}
+              type="button"
+              className="success"
+              disabled={loading || !paymentMethod}
+              style={{
+                width: "100%",
+                padding: "18px",
+                fontSize: "18px",
+                fontWeight: "700",
+                background: loading || !paymentMethod
+                  ? "#94a3b8"
+                  : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                boxShadow: loading || !paymentMethod
+                  ? "none"
+                  : "0 8px 24px rgba(16, 185, 129, 0.3)",
+                cursor: loading || !paymentMethod ? "not-allowed" : "pointer",
+                opacity: loading || !paymentMethod ? 0.7 : 1,
+              }}
+            >
+              {loading ? "Processando..." : "Finalizar Pedido →"}
+            </button>
           </div>
 
           <div>
@@ -439,6 +575,51 @@ function Checkout() {
                   </span>
                 </div>
               </div>
+
+              {paymentMethod && (
+                <div 
+                  style={{
+                    padding: "16px",
+                    background: isDark 
+                      ? "rgba(139, 92, 246, 0.1)" 
+                      : "rgba(139, 92, 246, 0.05)",
+                    borderRadius: "12px",
+                    marginTop: "16px"
+                  }}
+                >
+                  <div style={{ 
+                    fontSize: "13px", 
+                    fontWeight: "600",
+                    color: "var(--text-secondary)",
+                    marginBottom: "8px"
+                  }}>
+                    Método de Pagamento
+                  </div>
+                  <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "8px",
+                    color: "var(--text-primary)"
+                  }}>
+                    <span style={{ fontSize: "20px" }}>
+                      {paymentMethod === "pix" ? "🔲" : "💳"}
+                    </span>
+                    <span style={{ fontSize: "14px", fontWeight: "600" }}>
+                      {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}
+                    </span>
+                  </div>
+                  {paymentMethod === "credit_card" && paymentData?.lastDigits && (
+                    <div style={{ 
+                      fontSize: "12px", 
+                      color: "var(--text-secondary)",
+                      marginTop: "4px",
+                      marginLeft: "28px"
+                    }}>
+                      {paymentData.brand} •••• {paymentData.lastDigits}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

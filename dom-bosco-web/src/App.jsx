@@ -3,6 +3,7 @@ import { CartProvider } from "./contexts/CartContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Header from "./components/Header";
+import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -40,6 +41,8 @@ function App() {
               }
             />
           </Routes>
+
+          <Footer />
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>

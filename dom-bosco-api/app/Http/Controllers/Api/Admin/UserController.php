@@ -20,10 +20,7 @@ class UserController
         $this->userModel = new \User();
     }
 
-    /**
-     * Listar todos os usuários (admin)
-     * GET /api/admin/users
-     */
+    
     public function index(): void
     {
         $user = Authenticate::handle();
@@ -37,10 +34,7 @@ class UserController
         }
     }
 
-    /**
-     * Criar novo usuário (admin)
-     * POST /api/admin/users
-     */
+    
     public function store(): void
     {
         $user = Authenticate::handle();
@@ -48,7 +42,6 @@ class UserController
 
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // Validações
         if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
             Response::error('Nome, email e senha são obrigatórios');
         }
@@ -76,10 +69,7 @@ class UserController
         }
     }
 
-    /**
-     * Atualizar usuário (admin)
-     * PUT /api/admin/users/{id}
-     */
+    
     public function update(int $id): void
     {
         $user = Authenticate::handle();
@@ -87,7 +77,6 @@ class UserController
 
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // Verifica se usuário existe
         $existingUser = $this->userModel->getById($id);
         if (!$existingUser) {
             Response::notFound('Usuário não encontrado');
@@ -121,16 +110,12 @@ class UserController
         }
     }
 
-    /**
-     * Deletar usuário (admin)
-     * DELETE /api/admin/users/{id}
-     */
+    
     public function destroy(int $id): void
     {
         $user = Authenticate::handle();
         CheckRole::admin($user);
 
-        // Verifica se usuário existe
         $existingUser = $this->userModel->getById($id);
         if (!$existingUser) {
             Response::notFound('Usuário não encontrado');

@@ -16,15 +16,11 @@ class OrderController
         $this->orderModel = new \Order();
     }
 
-    /**
-     * Criar novo pedido
-     * POST /api/orders
-     */
+    
     public function store(): void
     {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        // Validações
         if (empty($data['items']) || !is_array($data['items'])) {
             Response::error('Items do pedido são obrigatórios');
         }

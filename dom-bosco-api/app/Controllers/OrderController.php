@@ -23,7 +23,6 @@ class OrderController
             Response::error("Dados do pedido inválidos", 400);
         }
 
-        // Verifica se todos os produtos têm estoque suficiente antes de processar o pedido
         foreach ($input['items'] as $item) {
             $productId = $item['id'];
             $requestedQty = $item['quantity'];
@@ -42,7 +41,6 @@ class OrderController
             }
         }
 
-        // Se chegou aqui, todos os produtos têm estoque. Processar o pedido.
         $orderData = [
             'user_id' => $input['user_id'] ?? 1, 
             'total'   => $input['total'],
@@ -52,7 +50,6 @@ class OrderController
         try {
             $orderId = $this->order->create($orderData);
 
-            // Decrementa o estoque de cada produto
             foreach ($input['items'] as $item) {
                 $productId = $item['id'];
                 $quantity = $item['quantity'];
@@ -60,7 +57,6 @@ class OrderController
                 $decremented = $this->inventory->decrement($productId, $quantity);
                 
                 if (!$decremented) {
-                    // Se falhar ao decrementar, log do erro (em produção, você pode querer reverter o pedido)
                     error_log("Erro ao decrementar estoque do produto {$productId} no pedido {$orderId}");
                 }
             }

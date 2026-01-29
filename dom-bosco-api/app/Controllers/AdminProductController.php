@@ -3,9 +3,7 @@
 require_once __DIR__ . '/../Models/Product.php';
 require_once __DIR__ . '/../Utils/JWT.php';
 
-/**
- * @var JWT
- */
+
 use JWT;
 
 class AdminProductController
@@ -17,9 +15,7 @@ class AdminProductController
         $this->product = new Product();
     }
 
-    /**
-     * Validação de admin via JWT
-     */
+    
     private function ensureAdmin(): array
     {
         $token = JWT::getTokenFromHeader();
@@ -49,9 +45,7 @@ class AdminProductController
         return $payload;
     }
 
-    /**
-     * Valida dados do produto
-     */
+    
     private function validateProductData(array $data): array
     {
         $errors = [];
@@ -95,9 +89,7 @@ class AdminProductController
         return $errors;
     }
 
-    /**
-     * LISTAR PRODUTOS (ADMIN)
-     */
+    
     public function index(): void
     {
         $this->ensureAdmin();
@@ -110,9 +102,7 @@ class AdminProductController
         ]);
     }
 
-    /**
-     * CRIAR PRODUTO
-     */
+    
     public function store(): void
     {
         $this->ensureAdmin();
@@ -153,9 +143,7 @@ class AdminProductController
         }
     }
 
-    /**
-     * ATUALIZAR PRODUTO
-     */
+    
     public function update(int $id): void
     {
         $this->ensureAdmin();
@@ -217,9 +205,7 @@ class AdminProductController
         }
     }
 
-    /**
-     * DELETAR PRODUTO
-     */
+    
     public function delete(int $id): void
     {
         error_log("=== DELETAR PRODUTO ===");

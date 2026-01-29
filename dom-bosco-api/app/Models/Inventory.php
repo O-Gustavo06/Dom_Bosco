@@ -11,9 +11,7 @@ class Inventory
         $this->pdo = Database::connect();
     }
 
-    /**
-     * Obtém o estoque de um produto
-     */
+    
     public function getByProductId(int $productId): ?array
     {
         $stmt = $this->pdo->prepare("
@@ -33,9 +31,7 @@ class Inventory
         return $result ?: null;
     }
 
-    /**
-     * Obtém todos os estoques com informações dos produtos
-     */
+    
     public function getAll(): array
     {
         $sql = "
@@ -56,9 +52,7 @@ class Inventory
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Cria um registro de estoque para um produto
-     */
+    
     public function create(int $productId, int $quantity = 0, int $minQuantity = 5): bool
     {
         $stmt = $this->pdo->prepare("
@@ -73,10 +67,7 @@ class Inventory
         ]);
     }
 
-    /**
-     * Atualiza a quantidade em estoque
-     * Auto-inativa/reativa o produto baseado no estoque
-     */
+    
     public function updateQuantity(int $productId, int $quantity): bool
     {
         $stmt = $this->pdo->prepare("
@@ -91,7 +82,6 @@ class Inventory
             ':product_id' => $productId
         ]);
 
-        // Auto-atualizar status do produto baseado no estoque
         if ($result) {
             require_once __DIR__ . '/Product.php';
             $productModel = new Product();
@@ -101,10 +91,7 @@ class Inventory
         return $result;
     }
 
-    /**
-     * Incrementa o estoque (entrada de mercadoria)
-     * Auto-inativa/reativa o produto baseado no estoque
-     */
+    
     public function increment(int $productId, int $amount): bool
     {
         $stmt = $this->pdo->prepare("
@@ -119,7 +106,6 @@ class Inventory
             ':product_id' => $productId
         ]);
 
-        // Auto-atualizar status do produto baseado no estoque
         if ($result) {
             require_once __DIR__ . '/Product.php';
             $productModel = new Product();
@@ -129,14 +115,10 @@ class Inventory
         return $result;
     }
 
-    /**
-     * Decrementa o estoque (venda/saída)
-     * Retorna false se não houver estoque suficiente
-     * Auto-inativa/reativa o produto baseado no estoque
-     */
+    
     public function decrement(int $productId, int $amount): bool
     {
-        // Verifica se há estoque suficiente
+
         $current = $this->getByProductId($productId);
         
         if (!$current || $current['quantity'] < $amount) {
@@ -156,7 +138,6 @@ class Inventory
             ':product_id' => $productId
         ]);
 
-        // Auto-atualizar status do produto baseado no estoque
         if ($result) {
             require_once __DIR__ . '/Product.php';
             $productModel = new Product();
@@ -166,9 +147,7 @@ class Inventory
         return $result;
     }
 
-    /**
-     * Verifica se um produto tem estoque suficiente
-     */
+    
     public function hasStock(int $productId, int $requestedQuantity = 1): bool
     {
         $inventory = $this->getByProductId($productId);
@@ -180,9 +159,7 @@ class Inventory
         return $inventory['quantity'] >= $requestedQuantity;
     }
 
-    /**
-     * Verifica se o estoque está abaixo do mínimo
-     */
+    
     public function isBelowMinimum(int $productId): bool
     {
         $inventory = $this->getByProductId($productId);
@@ -194,9 +171,7 @@ class Inventory
         return $inventory['quantity'] < $inventory['min_quantity'];
     }
 
-    /**
-     * Obtém produtos com estoque baixo
-     */
+    
     public function getLowStock(): array
     {
         $sql = "
@@ -216,9 +191,7 @@ class Inventory
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Deleta o registro de estoque de um produto
-     */
+    
     public function delete(int $productId): bool
     {
         $stmt = $this->pdo->prepare("
@@ -228,9 +201,7 @@ class Inventory
         return $stmt->execute([':product_id' => $productId]);
     }
 
-    /**
-     * Atualiza a quantidade mínima
-     */
+    
     public function updateMinQuantity(int $productId, int $minQuantity): bool
     {
         $stmt = $this->pdo->prepare("

@@ -3,9 +3,7 @@
 require_once __DIR__ . '/../Models/User.php';
 require_once __DIR__ . '/../Utils/JWT.php';
 
-/**
- * @var JWT
- */
+
 use JWT;
 
 class AdminUserController
@@ -17,9 +15,7 @@ class AdminUserController
         $this->user = new User();
     }
 
-    /**
-     * Validação de admin via JWT
-     */
+    
     private function ensureAdmin(): array
     {
         $token = JWT::getTokenFromHeader();
@@ -47,9 +43,7 @@ class AdminUserController
         return $payload;
     }
 
-    /**
-     * LISTAR TODOS OS USUÁRIOS
-     */
+    
     public function index(): void
     {
         $this->ensureAdmin();
@@ -59,9 +53,7 @@ class AdminUserController
         echo json_encode($users);
     }
 
-    /**
-     * CRIAR NOVO USUÁRIO (ADMIN OU USER)
-     */
+    
     public function store(): void
     {
         $this->ensureAdmin();
@@ -83,7 +75,6 @@ class AdminUserController
 
         $role = $data['role'] ?? 'customer';
 
-        // Apenas admin pode criar outro admin
         if ($role === 'admin') {
             $this->ensureAdmin();
         }
@@ -117,9 +108,7 @@ class AdminUserController
         }
     }
 
-    /**
-     * ATUALIZAR USUÁRIO
-     */
+    
     public function update(int $id): void
     {
         $this->ensureAdmin();
@@ -176,9 +165,7 @@ class AdminUserController
         }
     }
 
-    /**
-     * DELETAR USUÁRIO
-     */
+    
     public function delete(int $id): void
     {
         $this->ensureAdmin();

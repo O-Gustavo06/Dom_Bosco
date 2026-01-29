@@ -20,9 +20,7 @@ class User
        CONSULTAS
        ========================== */
 
-    /**
-     * Busca usuário por email
-     */
+    
     public function getByEmail(string $email): ?array
     {
         $stmt = $this->pdo->prepare(
@@ -36,9 +34,7 @@ class User
         return $user ?: null;
     }
 
-    /**
-     * Busca usuário por ID
-     */
+    
     public function getById(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
@@ -52,9 +48,7 @@ class User
         return $user ?: null;
     }
 
-    /**
-     * Lista todos os usuários
-     */
+    
     public function getAll(): array
     {
         $stmt = $this->pdo->prepare(
@@ -70,9 +64,7 @@ class User
        ESCRITA
        ========================== */
 
-    /**
-     * Cria novo usuário
-     */
+    
     public function create(
         string $name,
         string $email,
@@ -102,9 +94,7 @@ class User
         return (int) $this->pdo->lastInsertId();
     }
 
-    /**
-     * Atualiza usuário
-     */
+    
     public function update(int $id, array $data): bool
     {
         $updates = [];
@@ -136,9 +126,7 @@ class User
         return $stmt->execute($params);
     }
 
-    /**
-     * Deleta usuário
-     */
+    
     public function delete(int $id): bool
     {
         $stmt = $this->pdo->prepare(
@@ -152,10 +140,7 @@ class User
        AUTENTICAÇÃO
        ========================== */
 
-    /**
-     * Verifica credenciais do usuário
-     * Compatível com senha em texto plano e bcrypt
-     */
+    
     public function authenticate(string $email, string $password): ?array
     {
         $user = $this->getByEmail($email);
@@ -175,9 +160,7 @@ class User
         return $user;
     }
 
-    /**
-     * Mantém compatibilidade com código antigo
-     */
+    
     public function findByEmail(string $email)
     {
         return $this->getByEmail($email);

@@ -3,9 +3,7 @@
 require_once __DIR__ . '/../Models/User.php';
 require_once __DIR__ . '/../Utils/JWT.php';
 
-/**
- * @var JWT
- */
+
 use JWT;
 
 class AuthController

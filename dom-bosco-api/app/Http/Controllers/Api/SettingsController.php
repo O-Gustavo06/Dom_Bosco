@@ -20,24 +20,18 @@ class SettingsController
         $this->settingsModel = new \Settings();
     }
 
-    /**
-     * Ver configurações (público)
-     * GET /api/settings
-     */
+    
     public function index(): void
     {
         try {
             $settings = $this->settingsModel->getAll();
-            Response::json(['settings' => $settings]);
+            Response::json($settings);
         } catch (\Exception $e) {
             Response::error('Erro ao buscar configurações: ' . $e->getMessage(), 500);
         }
     }
 
-    /**
-     * Atualizar configurações (admin)
-     * PUT /api/settings
-     */
+    
     public function update(): void
     {
         $user = Authenticate::handle();
