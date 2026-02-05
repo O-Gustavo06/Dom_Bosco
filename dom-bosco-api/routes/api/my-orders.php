@@ -48,7 +48,6 @@ try {
     
     $orderModel = new Order();
     
-    // Buscar pedidos do usuário
     $orders = $orderModel->getUserOrders($userId);
     
     echo json_encode([
