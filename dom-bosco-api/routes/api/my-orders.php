@@ -37,7 +37,6 @@ try {
         exit;
     }
     
-    // Suportar tanto 'id' quanto 'user_id' no payload do token
     $userId = $payload['user_id'] ?? $payload['id'] ?? null;
     
     if (!$userId) {
