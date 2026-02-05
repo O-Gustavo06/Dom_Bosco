@@ -1,0 +1,32 @@
+# Arquivos de Ambiente
+.env
+.env.backup
+.env.production
+
+# Logs
+storage/logs/*
+!storage/logs/.gitkeep
+
+# Banco de Dados
+*.db
+database_backup_*.db
+
+# Cache e temporários
+*.cache
+*.tmp
+temp/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Vendor (se usar Composer)
+vendor/
+composer.lock

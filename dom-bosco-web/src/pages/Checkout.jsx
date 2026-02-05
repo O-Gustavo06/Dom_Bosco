@@ -13,11 +13,13 @@ function Checkout() {
   const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentData, setPaymentData] = useState(null);
+  const [deliveryType, setDeliveryType] = useState("delivery");
   
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     address: "",
+    houseNumber: "",
     city: "",
     zipCode: "",
   });
@@ -48,6 +50,11 @@ function Checkout() {
       return;
     }
 
+    if (deliveryType === "delivery" && (!formData.address || !formData.houseNumber || !formData.city || !formData.zipCode)) {
+      setError("Para entrega em casa, o endereço completo (incluindo número) é obrigatório!");
+      return;
+    }
+
     if (!paymentMethod) {
       setError("Selecione um método de pagamento!");
       return;
@@ -67,12 +74,14 @@ function Checkout() {
       const payload = {
         items: cart,
         total,
+        delivery_type: deliveryType,
         customer: {
           name: formData.name,
           email: formData.email,
-          address: formData.address,
-          city: formData.city,
-          zipCode: formData.zipCode,
+          address: deliveryType === "delivery" ? formData.address : "",
+          houseNumber: deliveryType === "delivery" ? formData.houseNumber : "",
+          city: deliveryType === "delivery" ? formData.city : "",
+          zipCode: deliveryType === "delivery" ? formData.zipCode : "",
         },
         payment: {
           method: paymentMethod,
@@ -177,7 +186,119 @@ function Checkout() {
                   color: "var(--text-primary)",
                 }}
               >
-                Dados de Entrega
+                Tipo de Entrega
+              </h2>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+                <div
+                  onClick={() => setDeliveryType("delivery")}
+                  style={{
+                    padding: "20px",
+                    border: `2px solid ${deliveryType === "delivery" 
+                      ? (isDark ? "#a78bfa" : "#8b5cf6")
+                      : "var(--border-color)"}`,
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    background: deliveryType === "delivery"
+                      ? (isDark ? "rgba(167, 139, 250, 0.1)" : "rgba(139, 92, 246, 0.05)")
+                      : (isDark ? "#1a1a1a" : "#fff"),
+                    transition: "all 0.2s ease",
+                    textAlign: "center"
+                  }}
+                >
+                  <div style={{ fontSize: "32px", marginBottom: "8px" }}>🚚</div>
+                  <div style={{ 
+                    fontWeight: "600", 
+                    fontSize: "16px",
+                    color: "var(--text-primary)",
+                    marginBottom: "4px"
+                  }}>
+                    Entrega em Casa
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                    Receba no conforto da sua casa
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setDeliveryType("pickup")}
+                  style={{
+                    padding: "20px",
+                    border: `2px solid ${deliveryType === "pickup" 
+                      ? (isDark ? "#a78bfa" : "#8b5cf6")
+                      : "var(--border-color)"}`,
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    background: deliveryType === "pickup"
+                      ? (isDark ? "rgba(167, 139, 250, 0.1)" : "rgba(139, 92, 246, 0.05)")
+                      : (isDark ? "#1a1a1a" : "#fff"),
+                    transition: "all 0.2s ease",
+                    textAlign: "center"
+                  }}
+                >
+                  <div style={{ fontSize: "32px", marginBottom: "8px" }}>🏪</div>
+                  <div style={{ 
+                    fontWeight: "600", 
+                    fontSize: "16px",
+                    color: "var(--text-primary)",
+                    marginBottom: "4px"
+                  }}>
+                    Retirar na Loja
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                    Retire quando quiser
+                  </div>
+                </div>
+              </div>
+
+              {deliveryType === "pickup" && (
+                <div
+                  style={{
+                    padding: "16px",
+                    background: isDark 
+                      ? "rgba(139, 92, 246, 0.1)" 
+                      : "rgba(139, 92, 246, 0.05)",
+                    borderRadius: "12px",
+                    border: `1px solid ${isDark ? "rgba(167, 139, 250, 0.2)" : "rgba(139, 92, 246, 0.2)"}`,
+                  }}
+                >
+                  <div style={{ 
+                    fontSize: "14px", 
+                    fontWeight: "600",
+                    color: "var(--text-primary)",
+                    marginBottom: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}>
+                    <span>📍</span>
+                    <span>Local de Retirada</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: "1.6" }}>
+                    <div>Loja Dom Bosco</div>
+                    <div>Rua Principal, 123 - Centro</div>
+                    <div>Horário: Segunda a Sábado, 9h às 18h</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div
+              className="card"
+              style={{
+                marginBottom: "24px",
+                padding: "32px",
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "700",
+                  marginBottom: "28px",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {deliveryType === "delivery" ? "Dados de Entrega" : "Dados para Contato"}
               </h2>
 
               {error && (
@@ -242,83 +363,110 @@ function Checkout() {
                 />
               </div>
 
-              <div style={{ marginBottom: "16px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  Endereço
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  placeholder="Rua, número, complemento"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  required
-                  style={{ width: "100%" }}
-                />
-              </div>
+              {deliveryType === "delivery" && (
+                <>
+                  <div style={{ marginBottom: "16px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Endereço
+                    </label>
+                    <input
+                      type="text"
+                      name="address"
+                      placeholder="Rua e complemento"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      required
+                      style={{ width: "100%" }}
+                    />
+                  </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "2fr 1fr",
-                  gap: "16px",
-                  marginBottom: "24px",
-                }}
-              >
-                <div>
-                  <label
+                  <div style={{ marginBottom: "16px" }}>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Número da Casa
+                    </label>
+                    <input
+                      type="text"
+                      name="houseNumber"
+                      placeholder="123"
+                      value={formData.houseNumber}
+                      onChange={handleInputChange}
+                      required
+                      style={{ width: "100%" }}
+                    />
+                  </div>
+
+                  <div
                     style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "var(--text-secondary)",
+                      display: "grid",
+                      gridTemplateColumns: "2fr 1fr",
+                      gap: "16px",
+                      marginBottom: "24px",
                     }}
                   >
-                    Cidade
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    placeholder="Sua cidade"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    required
-                    style={{ width: "100%" }}
-                  />
-                </div>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "8px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        Cidade
+                      </label>
+                      <input
+                        type="text"
+                        name="city"
+                        placeholder="Sua cidade"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        required
+                        style={{ width: "100%" }}
+                      />
+                    </div>
 
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    CEP
-                  </label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    placeholder="00000-000"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    required
-                    style={{ width: "100%" }}
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label
+                        style={{
+                          display: "block",
+                          marginBottom: "8px",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        CEP
+                      </label>
+                      <input
+                        type="text"
+                        name="zipCode"
+                        placeholder="00000-000"
+                        value={formData.zipCode}
+                        onChange={handleInputChange}
+                        required
+                        style={{ width: "100%" }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div
@@ -513,6 +661,29 @@ function Checkout() {
                   marginBottom: "24px",
                 }}
               >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <span style={{ fontSize: "15px", color: "var(--text-secondary)" }}>
+                    Tipo de Entrega
+                  </span>
+                  <span style={{ 
+                    fontWeight: "600", 
+                    fontSize: "14px", 
+                    color: "var(--text-primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}>
+                    <span>{deliveryType === "delivery" ? "🚚" : "🏪"}</span>
+                    {deliveryType === "delivery" ? "Entrega em Casa" : "Retirar na Loja"}
+                  </span>
+                </div>
                 <div
                   style={{
                     display: "flex",

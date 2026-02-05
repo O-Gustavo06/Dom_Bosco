@@ -30,13 +30,11 @@ class Product
                 p.stock,
                 p.active,
                 p.image,
-                COALESCE(c.name, \'Sem categoria\') AS category,
+                p.category_id,
                 COALESCE(i.quantity, 0) AS inventory_quantity
             FROM products p
-            LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN inventory i ON i.product_id = p.id
             WHERE p.active = 1
-            AND (i.quantity IS NULL OR i.quantity >= 5)
             ORDER BY p.id DESC
         ';
 
@@ -58,11 +56,9 @@ class Product
                 p.active,
                 p.image,
                 p.category_id,
-                c.name AS category,
                 COALESCE(i.quantity, 0) AS inventory_quantity,
                 COALESCE(i.min_quantity, 5) AS min_quantity
             FROM products p
-            LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN inventory i ON i.product_id = p.id
             ORDER BY p.id DESC
         ';
@@ -85,11 +81,9 @@ class Product
                 p.active,
                 p.image,
                 p.category_id,
-                COALESCE(c.name, \'Sem categoria\') AS category,
                 COALESCE(i.quantity, 0) AS inventory_quantity,
                 COALESCE(i.min_quantity, 5) AS min_quantity
             FROM products p
-            LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN inventory i ON i.product_id = p.id
             WHERE p.id = :id
             LIMIT 1

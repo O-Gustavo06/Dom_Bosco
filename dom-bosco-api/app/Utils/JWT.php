@@ -10,8 +10,7 @@ class JWT
     }
     
     private const ALG = 'HS256';
-    private const TOKEN_TTL = 2592000; // 30 dias em segundos
-
+    private const TOKEN_TTL = 2592000; 
     private static function logDebug(string $message): void
     {
         $logDir = __DIR__ . '/../../storage/logs';

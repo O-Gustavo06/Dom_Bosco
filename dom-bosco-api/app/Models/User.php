@@ -16,10 +16,6 @@ class User
         $this->pdo = Database::connection();
     }
 
-    /* ==========================
-       CONSULTAS
-       ========================== */
-
     
     public function getByEmail(string $email): ?array
     {
@@ -59,10 +55,6 @@ class User
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
-    /* ==========================
-       ESCRITA
-       ========================== */
 
     
     public function create(
@@ -134,6 +126,24 @@ class User
         );
 
         return $stmt->execute([':id' => $id]);
+    }
+
+    public function setPassword(int $id, string $password): bool
+    {
+        if (strlen($password) < 6) {
+            throw new Exception('Senha deve ter no mínimo 6 caracteres');
+        }
+
+        $hashed = password_hash($password, PASSWORD_BCRYPT);
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE users SET password = :password WHERE id = :id'
+        );
+
+        return $stmt->execute([
+            ':password' => $hashed,
+            ':id' => $id
+        ]);
     }
 
     /* ==========================

@@ -221,31 +221,65 @@ function Header() {
           )}
 
           {user ? (
-            <button
-              onClick={() => {
-                logout();
-                window.location.href = "/";
-              }}
-              style={{
-                padding: "12px 16px",
-                borderRadius: "12px",
-                border: "none",
-                backgroundColor: "#ef4444",
-                color: "white",
-                fontWeight: "600",
-                fontSize: "15px",
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#dc2626";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#ef4444";
-              }}
-            >
-              🚪 Sair
-            </button>
+            <>
+              <Link
+                to="/meus-pedidos"
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "12px",
+                  border: "none",
+                  backgroundColor: isActive("/meus-pedidos") 
+                    ? (isDark ? "#8b5cf6" : "#3b82f6")
+                    : "transparent",
+                  color: isActive("/meus-pedidos") ? "white" : "var(--text-primary)",
+                  fontWeight: "600",
+                  fontSize: "15px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  textDecoration: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px"
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive("/meus-pedidos")) {
+                    e.currentTarget.style.backgroundColor = isDark ? "rgba(139, 92, 246, 0.1)" : "rgba(59, 130, 246, 0.1)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive("/meus-pedidos")) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                📦 Meus Pedidos
+              </Link>
+              <button
+                onClick={() => {
+                  logout();
+                  window.location.href = "/";
+                }}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "12px",
+                  border: "none",
+                  backgroundColor: "#ef4444",
+                  color: "white",
+                  fontWeight: "600",
+                  fontSize: "15px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#dc2626";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#ef4444";
+                }}
+              >
+                🚪 Sair
+              </button>
+            </>
           ) : (
             <Link
               to="/login"
@@ -373,7 +407,7 @@ function Header() {
                           Siga nosso Instagram
                         </div>
                         <div style={{ fontWeight: "700", fontSize: "16px", color: "#a855f7" }}>
-                          @dombosco
+                          @papelaria.dombosco
                         </div>
                       </div>
                     </a>

@@ -16,7 +16,8 @@ require_once __DIR__ . '/../app/Http/Controllers/Api/SettingsController.php';
 require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/ProductController.php';
 require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/UserController.php';
 require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/OrderController.php';
-require_once __DIR__ . '/../app/Controllers/ImageController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/EmailLogController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/ImageController.php';
 require_once __DIR__ . '/../app/Http/Middleware/Cors.php';
 require_once __DIR__ . '/../config/database.php';
 
@@ -27,6 +28,8 @@ use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Api\Admin\EmailLogController as AdminEmailLogController;
+use App\Http\Controllers\Api\ImageController;
 use App\Http\Middleware\Cors;
 
 try {
@@ -39,21 +42,17 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 header('Content-Type: application/json');
 
-// Instanciar controllers
 $authController         = new AuthController();
 $productController      = new ProductController();
 $orderController        = new OrderController();
 $settingsController     = new SettingsController();
 $adminProductController = new AdminProductController();
 $adminUserController    = new AdminUserController();
+$adminEmailLogController = new AdminEmailLogController();
 $adminOrderController   = new AdminOrderController();
-$imageController        = new \ImageController();
+$imageController        = new ImageController();
 
-// ==========================================
-// ROTAS PÚBLICAS
-// ==========================================
 
-// Autenticação
 if ($method === 'POST' && $uri === '/api/register') {
     $authController->register();
     exit;
@@ -64,7 +63,21 @@ if ($method === 'POST' && $uri === '/api/login') {
     exit;
 }
 
-// Produtos (público)
+if ($method === 'POST' && $uri === '/api/forgot-password') {
+    $authController->forgotPassword();
+    exit;
+}
+
+if ($method === 'POST' && $uri === '/api/reset-password') {
+    $authController->resetPassword();
+    exit;
+}
+
+if ($method === 'PUT' && $uri === '/api/change-password') {
+    $authController->changePassword();
+    exit;
+}
+
 if ($method === 'GET' && $uri === '/api/products') {
     $productController->index();
     exit;
@@ -75,21 +88,21 @@ if ($method === 'GET' && preg_match('#^/api/products/(\d+)$#', $uri, $matches)) 
     exit;
 }
 
-// Pedidos
 if ($method === 'POST' && $uri === '/api/orders') {
     $orderController->store();
     exit;
 }
 
-// Settings (leitura pública)
+if ($method === 'GET' && $uri === '/api/my-orders') {
+    require __DIR__ . '/api/my-orders.php';
+    exit;
+}
+
 if ($method === 'GET' && $uri === '/api/settings') {
     $settingsController->index();
     exit;
 }
 
-// ==========================================
-// ROTAS ADMIN - PRODUTOS
-// ==========================================
 
 if ($method === 'GET' && $uri === '/api/admin/products') {
     $adminProductController->index();
@@ -111,9 +124,6 @@ if ($method === 'DELETE' && preg_match('#^/api/admin/products/(\d+)$#', $uri, $m
     exit;
 }
 
-// ==========================================
-// ROTAS ADMIN - USUÁRIOS
-// ==========================================
 
 if ($method === 'GET' && $uri === '/api/admin/users') {
     $adminUserController->index();
@@ -135,9 +145,6 @@ if ($method === 'DELETE' && preg_match('#^/api/admin/users/(\d+)$#', $uri, $matc
     exit;
 }
 
-// ==========================================
-// ROTAS ADMIN - PEDIDOS
-// ==========================================
 
 if ($method === 'GET' && $uri === '/api/admin/orders') {
     $adminOrderController->index();
@@ -154,9 +161,37 @@ if ($method === 'PUT' && preg_match('#^/api/admin/orders/(\d+)/status$#', $uri, 
     exit;
 }
 
-// ==========================================
-// ROTAS ADMIN - SETTINGS
-// ==========================================
+if ($method === 'PUT' && preg_match('#^/api/admin/orders/(\d+)/tracking-status$#', $uri, $matches)) {
+    $adminOrderController->updateTrackingStatus((int) $matches[1]);
+    exit;
+}
+
+
+if ($method === 'GET' && $uri === '/api/admin/email-logs') {
+    $adminEmailLogController->index();
+    exit;
+}
+
+if ($method === 'GET' && $uri === '/api/admin/email-logs/statistics') {
+    $adminEmailLogController->statistics();
+    exit;
+}
+
+if ($method === 'GET' && $uri === '/api/admin/email-logs/failed') {
+    $adminEmailLogController->failed();
+    exit;
+}
+
+if ($method === 'GET' && $uri === '/api/admin/email-logs/by-recipient') {
+    $adminEmailLogController->getByRecipient();
+    exit;
+}
+
+if ($method === 'GET' && preg_match('#^/api/admin/email-logs/order/(\d+)$#', $uri, $matches)) {
+    $adminEmailLogController->getByOrder((int) $matches[1]);
+    exit;
+}
+
 
 if ($method === 'PUT' && $uri === '/api/settings') {
     $settingsController->update();
@@ -179,7 +214,6 @@ if ($method === 'GET' && preg_match('#^/api/admin/products/(\d+)/images$#', $uri
     exit;
 }
 
-// Rota mais específica primeiro: /api/admin/products/{id}/images/{filename}
 if ($method === 'DELETE' && preg_match('#^/api/admin/products/(\d+)/images/(.+)$#', $uri, $m)) {
     $imageController->delete(
         (int) $m[1],
@@ -188,7 +222,6 @@ if ($method === 'DELETE' && preg_match('#^/api/admin/products/(\d+)/images/(.+)$
     exit;
 }
 
-// Rota alternativa: /api/admin/images/{id}/{filename}
 if ($method === 'DELETE' && preg_match('#^/api/admin/images/(\d+)/(.+)$#', $uri, $m)) {
     $imageController->delete(
         (int) $m[1],
@@ -232,59 +265,46 @@ if ($method === 'POST' && $uri === '/api/admin/update-images') {
     exit;
 }
 
-// ======================================
-// ROTAS DE INVENTÁRIO (ADMIN)
-// ======================================
-
-// GET /api/admin/inventory - Lista todos os estoques
 if ($method === 'GET' && $uri === '/api/admin/inventory') {
     $inventoryController->index();
     exit;
 }
 
-// GET /api/admin/inventory/low-stock - Produtos com estoque baixo
 if ($method === 'GET' && $uri === '/api/admin/inventory/low-stock') {
     $inventoryController->lowStock();
     exit;
 }
 
-// GET /api/admin/inventory/{productId} - Estoque de um produto
 if ($method === 'GET' && preg_match('#^/api/admin/inventory/(\d+)$#', $uri, $m)) {
     $inventoryController->show((int) $m[1]);
     exit;
 }
 
-// POST /api/admin/inventory - Criar registro de estoque
 if ($method === 'POST' && $uri === '/api/admin/inventory') {
     $inventoryController->store();
     exit;
 }
 
-// PUT /api/admin/inventory/{productId} - Atualizar quantidade
 if ($method === 'PUT' && preg_match('#^/api/admin/inventory/(\d+)$#', $uri, $m)) {
     $inventoryController->update((int) $m[1]);
     exit;
 }
 
-// POST /api/admin/inventory/{productId}/increment - Adicionar estoque
 if ($method === 'POST' && preg_match('#^/api/admin/inventory/(\d+)/increment$#', $uri, $m)) {
     $inventoryController->increment((int) $m[1]);
     exit;
 }
 
-// POST /api/admin/inventory/{productId}/decrement - Remover estoque
 if ($method === 'POST' && preg_match('#^/api/admin/inventory/(\d+)/decrement$#', $uri, $m)) {
     $inventoryController->decrement((int) $m[1]);
     exit;
 }
 
-// PATCH /api/admin/inventory/{productId}/min-quantity - Atualizar quantidade mínima
 if ($method === 'PATCH' && preg_match('#^/api/admin/inventory/(\d+)/min-quantity$#', $uri, $m)) {
     $inventoryController->updateMinQuantity((int) $m[1]);
     exit;
 }
 
-// DELETE /api/admin/inventory/{productId} - Deletar estoque
 if ($method === 'DELETE' && preg_match('#^/api/admin/inventory/(\d+)$#', $uri, $m)) {
     $inventoryController->delete((int) $m[1]);
     exit;

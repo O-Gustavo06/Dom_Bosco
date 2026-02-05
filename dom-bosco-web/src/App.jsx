@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import ProductDetails from "./pages/ProductDetails";
+import MyOrders from "./pages/MyOrders";
 import Dashboard from "./pages/admin/Dashboard";
 
 function App() {
@@ -29,6 +30,8 @@ function App() {
 
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
+            
+            <Route path="/meus-pedidos" element={<MyOrders />} />
 
             <Route path="/admin" element={<Dashboard />} />
 

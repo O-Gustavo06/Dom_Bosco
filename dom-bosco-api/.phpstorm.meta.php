@@ -1,9 +1,5 @@
 <?php
 
-/**
- * Stubs para IntelliSense
- * Este arquivo ajuda o editor a reconhecer as classes do projeto
- */
 
 namespace {
     class JWT {

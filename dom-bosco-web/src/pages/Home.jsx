@@ -446,27 +446,9 @@ function Home() {
         }}
       >
         <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          {/* Badge animado */}
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 20px",
-            background: "linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)",
-            borderRadius: "50px",
-            marginBottom: "20px",
-            boxShadow: "0 4px 15px rgba(168, 85, 247, 0.25)",
-            animation: "pulse 2s ease-in-out infinite",
-          }}>
-            <span style={{ fontSize: "16px" }}>🛍️</span>
-            <span style={{ fontSize: "13px", fontWeight: "700", color: "#6b21a8" }}>
-              PRODUTOS EM DESTAQUE
-            </span>
-          </div>
-
           <h1
             style={{
-              fontSize: "clamp(36px, 6vw, 56px)",
+              fontSize: "30px",
               fontWeight: "800",
               marginBottom: "16px",
               letterSpacing: "-1.5px",

@@ -128,6 +128,41 @@ export default function AdminOrders() {
         fetchOrderDetails(orderId);
       }
 
+    } catch (err) {
+      setError(`❌ ${err.message}`);
+    }
+  };
+
+  const updateTrackingStatus = async (orderId, newTrackingStatus) => {
+    try {
+      setError("");
+      setSuccess("");
+
+      const response = await fetch(
+        `http://localhost:8000/api/admin/orders/${orderId}/tracking-status`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ tracking_status: newTrackingStatus }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao atualizar status de rastreamento");
+      }
+
+      setSuccess("✅ Status de rastreamento atualizado com sucesso!");
+      fetchOrders();
+      
+      if (selectedOrder && selectedOrder.id === orderId) {
+        fetchOrderDetails(orderId);
+      }
+
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(`❌ ${err.message}`);
@@ -406,6 +441,7 @@ export default function AdminOrders() {
                   <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Cliente</th>
                   <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Total</th>
                   <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Itens</th>
+                  <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Entrega</th>
                   <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Status</th>
                   <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Data</th>
                   <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Ações</th>
@@ -444,6 +480,22 @@ export default function AdminOrders() {
                         color: "#0c4a6e",
                       }}>
                         {order.items_count} {order.items_count === 1 ? "item" : "itens"}
+                      </span>
+                    </td>
+                    <td style={{ padding: "16px" }}>
+                      <span style={{
+                        padding: "6px 10px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: "600",
+                        backgroundColor: order.delivery_tipo === "pickup" ? "#fef3c7" : "#dbeafe",
+                        color: order.delivery_tipo === "pickup" ? "#92400e" : "#1e40af",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
+                      }}>
+                        <span>{order.delivery_tipo === "pickup" ? "🏪" : "🚚"}</span>
+                        {order.delivery_tipo === "pickup" ? "Retirada" : "Entrega"}
                       </span>
                     </td>
                     <td style={{ padding: "16px" }}>
@@ -566,10 +618,33 @@ export default function AdminOrders() {
                         <strong style={{ color: "var(--text-secondary)" }}>Email:</strong> 
                         <span style={{ marginLeft: "8px", color: "var(--text-primary)" }}>{selectedOrder.user_email}</span>
                       </p>
-                      <p style={{ fontSize: "14px", gridColumn: "1 / -1" }}>
+                      <p style={{ fontSize: "14px" }}>
                         <strong style={{ color: "var(--text-secondary)" }}>Data do Pedido:</strong> 
                         <span style={{ marginLeft: "8px", color: "var(--text-primary)" }}>{formatDate(selectedOrder.created_at)}</span>
                       </p>
+                      <p style={{ fontSize: "14px" }}>
+                        <strong style={{ color: "var(--text-secondary)" }}>Tipo de Entrega:</strong> 
+                        <span style={{ 
+                          marginLeft: "8px", 
+                          color: "var(--text-primary)",
+                          fontWeight: "600"
+                        }}>
+                          {selectedOrder.delivery_tipo === "pickup" ? "🏪 Retirar na Loja" : "🚚 Entrega em Casa"}
+                        </span>
+                      </p>
+                      {selectedOrder.delivery_tipo === "delivery" && selectedOrder.delivery_entrega && (
+                        <>
+                          <p style={{ fontSize: "14px", gridColumn: "1 / -1" }}>
+                            <strong style={{ color: "var(--text-secondary)" }}>Endereço de Entrega:</strong> 
+                            <span style={{ marginLeft: "8px", color: "var(--text-primary)" }}>
+                              {selectedOrder.delivery_entrega}
+                              {selectedOrder.delivery_Numero_casa && `, Nº ${selectedOrder.delivery_Numero_casa}`}
+                              {selectedOrder.delivery_cidade && ` - ${selectedOrder.delivery_cidade}`}
+                              {selectedOrder.delivery_cep && ` - CEP: ${selectedOrder.delivery_cep}`}
+                            </span>
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -615,6 +690,67 @@ export default function AdminOrders() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Status de Rastreamento (apenas para delivery) */}
+                  {selectedOrder.delivery_tipo === "delivery" && (
+                    <div style={{
+                      backgroundColor: "var(--surface)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "12px",
+                      padding: "20px",
+                      marginBottom: "20px",
+                    }}>
+                      <h3 style={{ fontWeight: "600", fontSize: "16px", marginBottom: "16px", color: "var(--text-primary)" }}>
+                        📦 Status de Rastreamento
+                      </h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>Etapa Atual:</span>
+                          <span style={{
+                            padding: "6px 12px",
+                            borderRadius: "6px",
+                            fontSize: "13px",
+                            fontWeight: "600",
+                            backgroundColor: "rgba(59, 130, 246, 0.1)",
+                            color: "#3b82f6"
+                          }}>
+                            {selectedOrder.status_de_rastreamento === "analise_pendente" && "🔍 Em Análise"}
+                            {selectedOrder.status_de_rastreamento === "separando" && "📦 Sendo Separado"}
+                            {selectedOrder.status_de_rastreamento === "pronto_envio" && "✅ Pronto para Envio"}
+                            {selectedOrder.status_de_rastreamento === "a_caminho" && "🚚 A Caminho"}
+                            {selectedOrder.status_de_rastreamento === "entregue" && "🎉 Entregue"}
+                            {selectedOrder.status_de_rastreamento === "cancelado" && "❌ Cancelado"}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>Alterar para:</span>
+                          <select
+                            value={selectedOrder.status_de_rastreamento || "analise_pendente"}
+                            onChange={(e) =>
+                              updateTrackingStatus(selectedOrder.id, e.target.value)
+                            }
+                            style={{
+                              flex: 1,
+                              padding: "8px 12px",
+                              border: "1px solid var(--border-color)",
+                              borderRadius: "8px",
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              color: "var(--text-primary)",
+                              backgroundColor: "var(--surface)",
+                            }}
+                          >
+                            <option value="analise_pendente">🔍 Em Análise</option>
+                            <option value="separando">📦 Sendo Separado</option>
+                            <option value="pronto_envio">✅ Pronto para Envio</option>
+                            <option value="a_caminho">🚚 A Caminho</option>
+                            <option value="entregue">🎉 Entregue</option>
+                            <option value="cancelado">❌ Cancelado</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Itens do Pedido */}
                   <div style={{ marginBottom: "20px" }}>

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 require_once __DIR__ . '/../../../Models/Order.php';
 require_once __DIR__ . '/../../Response.php';
+require_once __DIR__ . '/../../../Services/EmailService.php';
 
 use App\Http\Response;
+use App\Services\EmailService;
 
 class OrderController
 {

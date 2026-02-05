@@ -20,6 +20,11 @@ class Order
                 o.user_id,
                 o.total,
                 o.status,
+                o.delivery_tipo,
+                o.delivery_entrega,
+                o.delivery_Numero_casa,
+                o.delivery_cidade,
+                o.delivery_cep,
                 o.created_at,
                 u.name as user_name,
                 u.email as user_email,
@@ -132,6 +137,11 @@ class Order
                 o.user_id,
                 o.total,
                 o.status,
+                o.delivery_tipo,
+                o.delivery_entrega,
+                o.delivery_Numero_casa,
+                o.delivery_cidade,
+                o.delivery_cep,
                 o.created_at,
                 u.name as user_name,
                 u.email as user_email
@@ -183,6 +193,31 @@ class Order
 
     public function create(array $data): int
     {
+        // Retry logic para lidar com database locks
+        $maxRetries = 3;
+        $retryDelay = 1; // segundos
+        
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                return $this->attemptCreate($data);
+            } catch (PDOException $e) {
+                // Se for erro de database locked e ainda temos tentativas
+                if (strpos($e->getMessage(), 'database is locked') !== false && $attempt < $maxRetries) {
+                    error_log("Tentativa $attempt de criar pedido falhou (database locked), tentando novamente...");
+                    sleep($retryDelay);
+                    $retryDelay *= 2; // Exponential backoff
+                    continue;
+                }
+                // Se não for locked ou acabaram as tentativas, propagar erro
+                throw $e;
+            }
+        }
+        
+        throw new Exception("Falha ao criar pedido após $maxRetries tentativas");
+    }
+    
+    private function attemptCreate(array $data): int
+    {
         $this->pdo->beginTransaction();
 
         try {
@@ -214,39 +249,80 @@ class Order
                 }
             }
 
+            $deliveryType = $data['delivery_type'] ?? 'delivery';
+            $deliveryAddress = null;
+            $deliveryHouseNumber = null;
+            $deliveryCity = null;
+            $deliveryZipcode = null;
+            
+            if ($deliveryType === 'delivery' && isset($data['customer'])) {
+                $deliveryAddress = $data['customer']['address'] ?? null;
+                $deliveryHouseNumber = $data['customer']['houseNumber'] ?? null;
+                $deliveryCity = $data['customer']['city'] ?? null;
+                $deliveryZipcode = $data['customer']['zipCode'] ?? null;
+            }
+
             $stmt = $this->pdo->prepare("
-                INSERT INTO orders (user_id, total, status)
-                VALUES (:user_id, :total, :status)
+                INSERT INTO orders (user_id, total, status, delivery_tipo, delivery_entrega, delivery_Numero_casa, delivery_cidade, delivery_cep)
+                VALUES (:user_id, :total, :status, :delivery_tipo, :delivery_entrega, :delivery_Numero_casa, :delivery_cidade, :delivery_cep)
             ");
 
             $stmt->execute([
                 ':user_id' => $userId,
                 ':total'   => $data['total'],
-                ':status'  => 'pending'
+                ':status'  => 'pending',
+                ':delivery_tipo' => $deliveryType,
+                ':delivery_entrega' => $deliveryAddress,
+                ':delivery_Numero_casa' => $deliveryHouseNumber,
+                ':delivery_cidade' => $deliveryCity,
+                ':delivery_cep' => $deliveryZipcode
             ]);
 
             $orderId = (int) $this->pdo->lastInsertId();
 
-            $itemStmt = $this->pdo->prepare("
-                INSERT INTO order_items (order_id, product_id, quantity, price)
-                VALUES (:order_id, :product_id, :quantity, :price)
-            ");
+            // Inserir todos os itens do pedido em batch (muito mais rápido)
+            $itemsValues = [];
+            $itemsParams = [];
+            $paramIndex = 0;
+            
+            foreach ($data['items'] as $item) {
+                $itemsValues[] = "(?, ?, ?, ?)";
+                $itemsParams[] = $orderId;
+                $itemsParams[] = $item['id'];
+                $itemsParams[] = $item['quantity'];
+                $itemsParams[] = $item['price'];
+            }
+            
+            if (!empty($itemsValues)) {
+                $itemStmt = $this->pdo->prepare("
+                    INSERT INTO order_items (order_id, product_id, quantity, price)
+                    VALUES " . implode(', ', $itemsValues) . "
+                ");
+                $itemStmt->execute($itemsParams);
+            }
 
+            // Decrementar estoque de todos os produtos com prepared statement reutilizável
             require_once __DIR__ . '/Inventory.php';
             $inventoryModel = new Inventory();
-
+            
+            // Preparar o statement uma vez e reutilizar para todos os produtos (mais eficiente)
+            require_once __DIR__ . '/Product.php';
+            $productModel = new Product();
+            $updateStmt = $this->pdo->prepare("
+                UPDATE inventory
+                SET quantity = quantity - :amount,
+                    last_update = CURRENT_TIMESTAMP
+                WHERE product_id = :product_id
+                AND quantity >= :amount
+            ");
+            
             foreach ($data['items'] as $item) {
-
-                $itemStmt->execute([
-                    ':order_id'   => $orderId,
-                    ':product_id' => $item['id'],
-                    ':quantity'   => $item['quantity'],
-                    ':price'      => $item['price']
+                $result = $updateStmt->execute([
+                    ':amount' => $item['quantity'],
+                    ':product_id' => $item['id']
                 ]);
-
-                $decremented = $inventoryModel->decrement($item['id'], $item['quantity']);
                 
-                if (!$decremented) {
+                if ($updateStmt->rowCount() === 0) {
                     throw new Exception("Estoque insuficiente para o produto ID: {$item['id']}");
                 }
             }
@@ -258,5 +334,73 @@ class Order
             $this->pdo->rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Buscar pedidos de um usuário específico
+     */
+    public function getUserOrders(int $userId): array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                o.id,
+                o.user_id,
+                o.total,
+                o.status,
+                o.status_de_rastreamento,
+                o.delivery_tipo,
+                o.delivery_entrega,
+                o.delivery_Numero_casa,
+                o.delivery_cidade,
+                o.delivery_cep,
+                o.created_at,
+                COUNT(oi.id) as items_count
+            FROM orders o
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.user_id = :user_id
+            GROUP BY o.id
+            ORDER BY o.created_at DESC
+        ");
+        
+        $stmt->execute([':user_id' => $userId]);
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Para cada pedido, buscar os itens
+        foreach ($orders as &$order) {
+            $itemsStmt = $this->pdo->prepare("
+                SELECT 
+                    oi.id,
+                    oi.product_id,
+                    oi.quantity,
+                    oi.price,
+                    p.name as product_name,
+                    p.image
+                FROM order_items oi
+                LEFT JOIN products p ON oi.product_id = p.id
+                WHERE oi.order_id = :order_id
+            ");
+            
+            $itemsStmt->execute([':order_id' => $order['id']]);
+            $order['items'] = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        return $orders;
+    }
+
+    /**
+     * Atualizar status de rastreamento
+     */
+    public function updateTrackingStatus(int $id, string $trackingStatus): bool
+    {
+        $stmt = $this->pdo->prepare("
+            UPDATE orders 
+            SET status_de_rastreamento = :status_de_rastreamento 
+            WHERE id = :id
+        ");
+
+        return $stmt->execute([
+            ':id' => $id,
+            ':status_de_rastreamento' => $trackingStatus
+        ]);
     }
 }

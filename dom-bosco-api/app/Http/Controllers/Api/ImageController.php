@@ -1,20 +1,22 @@
 <?php
 
-require_once __DIR__ . '/../Models/Image.php';
-require_once __DIR__ . '/../Utils/JWT.php';
-require_once __DIR__ . '/../Utils/Logger.php';
+namespace App\Http\Controllers\Api;
+
+require_once __DIR__ . '/../../../Models/Image.php';
+require_once __DIR__ . '/../../../Utils/JWT.php';
+require_once __DIR__ . '/../../../Utils/Logger.php';
 
 use App\Utils\JWT;
 
 class ImageController
 {
-    private Image $image;
-    private Logger $logger;
+    private \Image $image;
+    private \Logger $logger;
 
     public function __construct()
     {
-        $this->image = new Image();
-        $this->logger = new Logger('images.log');
+        $this->image = new \Image();
+        $this->logger = new \Logger('images.log');
     }
 
     private function ensureAdmin(): array
@@ -243,7 +245,6 @@ class ImageController
         }
     }
 
-    
     private function productExists(int $productId): bool
     {
         try {

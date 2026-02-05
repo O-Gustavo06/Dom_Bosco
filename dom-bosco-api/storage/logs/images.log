@@ -62,3 +62,10 @@
 [2026-01-27 01:37:09] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":2}
 [2026-01-27 01:38:36] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":42,"count":2}
 [2026-01-29 04:19:07] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":52,"count":1}
+[2026-01-29 16:04:20] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":51,"count":1}
+[2026-01-31 18:57:50] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":39,"count":0}
+[2026-01-31 18:57:58] [INFO] Tentativa de upload de imagem {"user_id":11,"ip":"::1"}
+[2026-01-31 18:57:58] [INFO] Arquivo salvo com sucesso {"product_id":39,"filename":"lapis-preto.jpg","size":5805,"path":"C:\\xampp\\htdocs\\Dom_Bosco\\dom-bosco-api\\app\\Models\/..\/..\/public\/images\/products\/lapis-preto.jpg"}
+[2026-01-31 18:57:58] [INFO] Upload realizado com sucesso {"user_id":11,"product_id":"39","filename":"lapis-preto.jpg","file_size":5805,"custom_name":"lapis-preto.jpg"}
+[2026-01-31 18:57:58] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":39,"count":1}
+[2026-02-03 00:04:51] [INFO] Imagens listadas com sucesso {"user_id":11,"product_id":52,"count":1}

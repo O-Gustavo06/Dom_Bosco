@@ -118,13 +118,6 @@ class Inventory
     
     public function decrement(int $productId, int $amount): bool
     {
-
-        $current = $this->getByProductId($productId);
-        
-        if (!$current || $current['quantity'] < $amount) {
-            return false;
-        }
-
         $stmt = $this->pdo->prepare("
             UPDATE inventory
             SET quantity = quantity - :amount,
@@ -133,20 +126,51 @@ class Inventory
             AND quantity >= :amount
         ");
 
-        $result = $stmt->execute([
+        $stmt->execute([
             ':amount' => $amount,
             ':product_id' => $productId
         ]);
+        
+        // Verificar se alguma linha foi afetada (se tinha estoque suficiente)
+        $success = $stmt->rowCount() > 0;
 
-        if ($result) {
+        if ($success) {
             require_once __DIR__ . '/Product.php';
             $productModel = new Product();
             $productModel->updateActiveStatusByStock($productId);
         }
 
-        return $result;
+        return $success;
     }
 
+    /**
+     * Verificar estoque de múltiplos produtos em uma única query (batch)
+     * @param array $productIds Array de IDs dos produtos
+     * @return array Array associativo [product_id => quantity]
+     */
+    public function checkStockBatch(array $productIds): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+        
+        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+        $stmt = $this->pdo->prepare("
+            SELECT product_id, quantity
+            FROM inventory
+            WHERE product_id IN ($placeholders)
+        ");
+        
+        $stmt->execute($productIds);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $stockMap = [];
+        foreach ($results as $row) {
+            $stockMap[$row['product_id']] = (int) $row['quantity'];
+        }
+        
+        return $stockMap;
+    }
     
     public function hasStock(int $productId, int $requestedQuantity = 1): bool
     {

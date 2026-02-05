@@ -322,14 +322,14 @@ function Contact() {
                 marginBottom: "8px",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px"
+                gap: "20px"
               }}>
                 🕒 HORÁRIO DE ATENDIMENTO
               </div>
               <div style={{ 
                 fontSize: "13px", 
                 color: "var(--text-primary)",
-                lineHeight: "1.6"
+                lineHeight: "1.8"
               }}>
                 {contactInfo.workingHours}
               </div>

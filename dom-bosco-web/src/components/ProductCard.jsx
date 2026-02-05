@@ -2,30 +2,23 @@ import { Link } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { useState, useEffect } from "react";
 
-// Helper para normalizar URL da imagem
 function getImageUrl(product) {
   if (!product) return null;
 
   let imageField = null;
 
-  // PRIORIDADE 1: Campo "image" (com i minúsculo) - campo do banco de dados
   if (product.image) {
     imageField = product.image;
   }
-  // PRIORIDADE 2: Campo "Image" (com I maiúsculo) - fallback
   else if (product.Image) {
     imageField = product.Image;
   }
-  // PRIORIDADE 3: Campo "imagens" (plural) - caso tenha múltiplas imagens
   else if (product.imagens) {
-    // Se for array, pega o primeiro elemento
     if (Array.isArray(product.imagens)) {
       imageField = product.imagens.length > 0 ? product.imagens[0] : null;
     }
-    // Se for string, tenta fazer parse (caso seja JSON)
     else if (typeof product.imagens === 'string') {
       try {
-        // Tenta fazer parse se for JSON
         const parsed = JSON.parse(product.imagens);
         if (Array.isArray(parsed)) {
           imageField = parsed.length > 0 ? parsed[0] : null;
@@ -33,11 +26,9 @@ function getImageUrl(product) {
           imageField = parsed;
         }
       } catch {
-        // Se não for JSON, verifica se é separado por vírgula
         if (product.imagens.includes(',')) {
           imageField = product.imagens.split(',')[0].trim();
         } else {
-          // É uma string simples com o nome do arquivo
           imageField = product.imagens;
         }
       }
@@ -45,7 +36,6 @@ function getImageUrl(product) {
       imageField = product.imagens;
     }
   }
-  // PRIORIDADE 4: Campos alternativos (fallback para compatibilidade)
   else {
     imageField = product.image_url || product.imageUrl || product.imagem;
   }
@@ -54,7 +44,6 @@ function getImageUrl(product) {
     return null;
   }
 
-  // Se for um array JSON em string (ex: ["img1.jpg", "img2.jpg"])
   if (typeof imageField === 'string' && imageField.startsWith('[')) {
     try {
       const parsed = JSON.parse(imageField);
@@ -62,24 +51,19 @@ function getImageUrl(product) {
         imageField = parsed[0];
       }
     } catch (e) {
-      // Ignora erro de parse e continua com a string original
     }
   }
 
-  // Limpa espaços em branco
   imageField = String(imageField).trim();
 
-  // Se já é uma URL completa (http:// ou https://)
   if (imageField.startsWith("http://") || imageField.startsWith("https://")) {
     return imageField;
   }
 
-  // Se começa com /, é um caminho relativo do backend
   if (imageField.startsWith("/")) {
     return `http://localhost:8000${imageField}`;
   }
 
-  // Caso contrário, assume que é um nome de arquivo e monta o caminho
   return `http://localhost:8000/images/products/${imageField}`;
 }
 
@@ -88,7 +72,6 @@ function ProductCard({ product }) {
   const [imageError, setImageError] = useState(false);
   const imageUrl = getImageUrl(product);
   
-  // Verifica se o produto tem múltiplas imagens
   const hasMultipleImages = () => {
     if (!product.image) return false;
     
@@ -105,7 +88,6 @@ function ProductCard({ product }) {
   
   const multipleImages = hasMultipleImages();
 
-  // Debug: Log apenas no primeiro produto
   useEffect(() => {
     if (product && product.id === 1) {
       console.log("🔍 ProductCard - Produto recebido:", product);
@@ -169,7 +151,6 @@ function ProductCard({ product }) {
           </div>
         )}
         
-        {/* Badge de múltiplas imagens */}
         {multipleImages && !imageError && (
           <div style={{
             position: "absolute",
@@ -190,7 +171,6 @@ function ProductCard({ product }) {
         )}
       </div>
 
-      {/* CONTEÚDO */}
       <div style={{ padding: "24px", flexGrow: 1, display: "flex", flexDirection: "column" }}>
         {product.category && (
           <span className="badge-category" style={{ marginBottom: "12px" }}>
