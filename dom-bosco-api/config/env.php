@@ -1,7 +1,5 @@
 <?php
-/**
- * Helper simples para carregar variáveis de ambiente do .env
- */
+
 function loadEnv($path = null) {
     if ($path === null) {
         $path = __DIR__ . '/../.env';
@@ -16,21 +14,17 @@ function loadEnv($path = null) {
     foreach ($lines as $line) {
         $line = trim($line);
         
-        // Ignorar comentários
         if (strpos($line, '#') === 0) {
             continue;
         }
         
-        // Parse key=value
         if (strpos($line, '=') !== false) {
             list($name, $value) = explode('=', $line, 2);
             $name = trim($name);
             $value = trim($value);
             
-            // Remove aspas
             $value = trim($value, '"\'');
             
-            // Define como variável de ambiente
             if (!array_key_exists($name, $_ENV)) {
                 $_ENV[$name] = $value;
                 putenv("$name=$value");
@@ -41,9 +35,7 @@ function loadEnv($path = null) {
     return true;
 }
 
-/**
- * Obter variável de ambiente
- */
+
 if (!function_exists('env')) {
     function env($key, $default = null) {
         if (isset($_ENV[$key])) {
@@ -55,5 +47,4 @@ if (!function_exists('env')) {
     }
 }
 
-// Carregar .env automaticamente
 loadEnv();
