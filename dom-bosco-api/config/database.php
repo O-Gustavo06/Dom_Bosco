@@ -1,6 +1,5 @@
 <?php
 
-// Helper function para acessar variáveis de ambiente
 if (!function_exists('env')) {
     function env($key, $default = null) {
         return $_ENV[$key] ?? getenv($key) ?: $default;
@@ -43,32 +42,24 @@ class Database
             self::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             self::$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             
-            // Configurações otimizadas para performance
             self::$pdo->setAttribute(PDO::ATTR_TIMEOUT, 30);
             
-            // Journal na MEMÓRIA para evitar locks
             self::$pdo->exec('PRAGMA journal_mode = MEMORY');
             
-            // Timeout para locks
             self::$pdo->exec('PRAGMA busy_timeout = 30000');
             
-            // Sincronização NORMAL
             self::$pdo->exec('PRAGMA synchronous = NORMAL');
             
-            // Cache grande
             self::$pdo->exec('PRAGMA cache_size = -64000');
             
-            // Temp store na memória
             self::$pdo->exec('PRAGMA temp_store = MEMORY');
             
-            // Foreign keys
             self::$pdo->exec('PRAGMA foreign_keys = ON');
         }
 
         return self::$pdo;
     }
 
-    // Compatibilidade com código antigo
     public static function connect()
     {
         return self::connection();
