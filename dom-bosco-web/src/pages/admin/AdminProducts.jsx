@@ -3,10 +3,12 @@ import { useAuth } from "../../contexts/AuthContext";
 
 export default function AdminProducts() {
   const { token } = useAuth();
+  const MAX_IMAGES = 4;
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [categories, setCategories] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -18,6 +20,7 @@ export default function AdminProducts() {
     category_id: "",
     active: 1,
   });
+  const [imageInputs, setImageInputs] = useState([""]);
 
   const [showImageManager, setShowImageManager] = useState(false);
   const [selectedProductForImages, setSelectedProductForImages] = useState(null);
@@ -32,7 +35,88 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, [token]);
+
+  const fetchCategories = async () => {
+    try {
+      if (!token) {
+        return;
+      }
+
+      const response = await fetch("http://localhost:8000/api/admin/categories", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ error: "Erro ao buscar categorias" }));
+        throw new Error(data.error || "Erro ao buscar categorias");
+      }
+
+      const data = await response.json();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Erro ao buscar categorias:", err);
+    }
+  };
+
+  const parseImagesFromProduct = (imageField) => {
+    if (!imageField) return [""];
+
+    if (Array.isArray(imageField)) {
+      const normalized = imageField.map((img) => String(img).trim()).filter(Boolean);
+      return normalized.length > 0 ? normalized.slice(0, MAX_IMAGES) : [""];
+    }
+
+    if (typeof imageField === "string") {
+      const trimmed = imageField.trim();
+      if (!trimmed) return [""];
+
+      if (trimmed.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            const normalized = parsed.map((img) => String(img).trim()).filter(Boolean);
+            return normalized.length > 0 ? normalized.slice(0, MAX_IMAGES) : [""];
+          }
+        } catch {
+          // fallback to single value below
+        }
+      }
+
+      return [trimmed].slice(0, MAX_IMAGES);
+    }
+
+    return [String(imageField).trim()].filter(Boolean).slice(0, MAX_IMAGES);
+  };
+
+  const normalizeImageInputs = (inputs) =>
+    inputs.map((img) => img.trim()).filter(Boolean).slice(0, MAX_IMAGES);
+
+  const buildImagePayload = (inputs) => {
+    const images = normalizeImageInputs(inputs);
+    if (images.length === 0) return null;
+    if (images.length === 1) return images[0];
+    return JSON.stringify(images);
+  };
+
+  const handleAddImageInput = () => {
+    if (imageInputs.length >= MAX_IMAGES) return;
+    setImageInputs((prev) => [...prev, ""]);
+  };
+
+  const handleRemoveImageInput = (index) => {
+    setImageInputs((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [""];
+    });
+  };
+
+  const handleImageInputChange = (index, value) => {
+    setImageInputs((prev) => prev.map((img, i) => (i === index ? value : img)));
+  };
 
   const fetchProducts = async () => {
     try {
@@ -253,7 +337,7 @@ export default function AdminProducts() {
     setError("");
     setSuccess("");
 
-    if (!formData.name || !formData.price || !formData.stock || !formData.category_id) {
+    if (!formData.name || !formData.price || !formData.category_id) {
       setError("❌ Preencha todos os campos obrigatórios");
       return;
     }
@@ -264,13 +348,23 @@ export default function AdminProducts() {
         ? `http://localhost:8000/api/admin/products/${editingId}`
         : "http://localhost:8000/api/admin/products";
 
+      const stockValue = formData.stock === "" || formData.stock === null
+        ? 0
+        : formData.stock;
+
+      const payload = {
+        ...formData,
+        stock: stockValue,
+        image: buildImagePayload(imageInputs),
+      };
+
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -339,10 +433,11 @@ export default function AdminProducts() {
       name: product.name,
       description: product.description || "",
       price: product.price,
-      stock: product.stock,
+      stock: product.inventory_quantity ?? product.stock,
       category_id: product.category_id,
       active: product.active,
     });
+    setImageInputs(parseImagesFromProduct(product.image));
     setEditingId(product.id);
     setShowForm(true);
     setError("");
@@ -358,6 +453,7 @@ export default function AdminProducts() {
       category_id: "",
       active: 1,
     });
+    setImageInputs([""]);
     setEditingId(null);
     setShowForm(false);
   };
@@ -404,7 +500,13 @@ export default function AdminProducts() {
       )}
 
       <button
-        onClick={() => setShowForm(!showForm)}
+        onClick={() => {
+          if (showForm) {
+            resetForm();
+            return;
+          }
+          setShowForm(true);
+        }}
         style={{
           padding: "10px 20px",
           backgroundColor: showForm ? "#6b7280" : "#7c3aed",
@@ -428,133 +530,241 @@ export default function AdminProducts() {
       </button>
 
       {showForm && (
-        <form
-          onSubmit={handleSubmit}
+        <div
           style={{
-            backgroundColor: "var(--surface)",
-            padding: "24px",
-            borderRadius: "12px",
-            marginBottom: "32px",
-            border: "1px solid var(--border-color)",
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "stretch",
+            justifyContent: "flex-end",
+            zIndex: 1200,
           }}
+          onClick={resetForm}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "16px", marginBottom: "16px" }}>
-            <input
-              type="text"
-              name="name"
-              placeholder="Nome do Produto *"
-              value={formData.name}
-              onChange={handleInputChange}
-              style={{
-                padding: "12px",
-                border: "1px solid var(--border-color)",
-                borderRadius: "8px",
-                backgroundColor: "var(--surface-gray)",
-                color: "var(--text-primary)",
-              }}
-              required
-            />
-            <input
-              type="number"
-              name="price"
-              placeholder="Preço *"
-              value={formData.price}
-              onChange={handleInputChange}
-              style={{
-                padding: "12px",
-                border: "1px solid var(--border-color)",
-                borderRadius: "8px",
-                backgroundColor: "var(--surface-gray)",
-                color: "var(--text-primary)",
-              }}
-              required
-            />
-            <input
-              type="number"
-              name="stock"
-              placeholder="Estoque *"
-              value={formData.stock}
-              onChange={handleInputChange}
-              style={{
-                padding: "12px",
-                border: "1px solid var(--border-color)",
-                borderRadius: "8px",
-                backgroundColor: "var(--surface-gray)",
-                color: "var(--text-primary)",
-              }}
-              required
-            />
-            <input
-              type="number"
-              name="category_id"
-              placeholder="ID da Categoria *"
-              value={formData.category_id}
-              onChange={handleInputChange}
-              style={{
-                padding: "12px",
-                border: "1px solid var(--border-color)",
-                borderRadius: "8px",
-                backgroundColor: "var(--surface-gray)",
-                color: "var(--text-primary)",
-              }}
-              required
-            />
-          </div>
-
-          <textarea
-            name="description"
-            placeholder="Descrição"
-            value={formData.description}
-            onChange={handleInputChange}
+          <aside
             style={{
-              width: "100%",
-              padding: "12px",
-              border: "1px solid var(--border-color)",
-              borderRadius: "8px",
-              backgroundColor: "var(--surface-gray)",
-              color: "var(--text-primary)",
-              marginBottom: "16px",
-              fontFamily: "inherit",
-              minHeight: "100px",
+              width: "520px",
+              maxWidth: "90vw",
+              backgroundColor: "var(--surface)",
+              borderLeft: "1px solid var(--border-color)",
+              padding: "24px",
+              overflowY: "auto",
+              boxShadow: "-12px 0 30px rgba(0, 0, 0, 0.25)",
             }}
-          />
-
-          <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              name="active"
-              checked={formData.active === 1}
-              onChange={handleInputChange}
-              style={{ width: "18px", height: "18px", cursor: "pointer" }}
-            />
-            <span style={{ color: "var(--text-primary)" }}>Produto Ativo</span>
-          </label>
-
-          <button
-            type="submit"
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#7c3aed",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "600",
-              transition: "all 0.3s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(124, 58, 237, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            onClick={(e) => e.stopPropagation()}
           >
-            {editingId ? "💾 Atualizar" : "➕ Criar"}
-          </button>
-        </form>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <div>
+                <h2 style={{ margin: 0, color: "var(--text-primary)", fontSize: "20px" }}>
+                  {editingId ? "Editar Produto" : "Novo Produto"}
+                </h2>
+                <p style={{ margin: "4px 0 0 0", color: "var(--text-secondary)", fontSize: "12px" }}>
+                  Preencha os dados e salve as alteracoes
+                </p>
+              </div>
+              <button
+                onClick={resetForm}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "none",
+                  fontSize: "22px",
+                  cursor: "pointer",
+                  color: "var(--text-secondary)",
+                }}
+                aria-label="Fechar"
+                type="button"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ display: "grid", gap: "12px", marginBottom: "16px" }}>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Nome do Produto *"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  style={{
+                    padding: "12px",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--surface-gray)",
+                    color: "var(--text-primary)",
+                  }}
+                  required
+                />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
+                  <input
+                    type="number"
+                    name="price"
+                    placeholder="Preco *"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    style={{
+                      padding: "12px",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "8px",
+                      backgroundColor: "var(--surface-gray)",
+                      color: "var(--text-primary)",
+                    }}
+                    required
+                  />
+                </div>
+                <select
+                  name="category_id"
+                  value={formData.category_id}
+                  onChange={handleInputChange}
+                  style={{
+                    padding: "12px",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "8px",
+                    backgroundColor: "var(--surface-gray)",
+                    color: "var(--text-primary)",
+                  }}
+                  required
+                >
+                  <option value="">Selecione a categoria</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <textarea
+                name="description"
+                placeholder="Descricao"
+                value={formData.description}
+                onChange={handleInputChange}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  backgroundColor: "var(--surface-gray)",
+                  color: "var(--text-primary)",
+                  marginBottom: "16px",
+                  fontFamily: "inherit",
+                  minHeight: "100px",
+                }}
+              />
+
+              <div style={{ marginBottom: "16px" }}>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "8px",
+                }}>
+                  <label style={{ color: "var(--text-primary)", fontWeight: "600" }}>
+                    Imagens do produto (max {MAX_IMAGES})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddImageInput}
+                    disabled={imageInputs.length >= MAX_IMAGES}
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: imageInputs.length >= MAX_IMAGES ? "#9ca3af" : "#7c3aed",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: imageInputs.length >= MAX_IMAGES ? "not-allowed" : "pointer",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    ➕ Adicionar
+                  </button>
+                </div>
+
+                <div style={{ display: "grid", gap: "8px" }}>
+                  {imageInputs.map((value, index) => (
+                    <div
+                      key={index}
+                      style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "8px" }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="URL completa ou nome do arquivo (ex: produto-1.jpg)"
+                        value={value}
+                        onChange={(e) => handleImageInputChange(index, e.target.value)}
+                        style={{
+                          padding: "12px",
+                          border: "1px solid var(--border-color)",
+                          borderRadius: "8px",
+                          backgroundColor: "var(--surface-gray)",
+                          color: "var(--text-primary)",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImageInput(index)}
+                        style={{
+                          padding: "0 12px",
+                          backgroundColor: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: "8px", color: "var(--text-secondary)", fontSize: "12px" }}>
+                  Dica: voce pode informar URLs completas ou apenas o nome do arquivo salvo em
+                  /images/products.
+                </div>
+              </div>
+
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  name="active"
+                  checked={formData.active === 1}
+                  onChange={handleInputChange}
+                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                />
+                <span style={{ color: "var(--text-primary)" }}>Produto Ativo</span>
+              </label>
+
+              <button
+                type="submit"
+                style={{
+                  width: "100%",
+                  padding: "12px 24px",
+                  backgroundColor: "#7c3aed",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(124, 58, 237, 0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                {editingId ? "💾 Atualizar" : "➕ Criar"}
+              </button>
+            </form>
+          </aside>
+        </div>
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "16px" }}>

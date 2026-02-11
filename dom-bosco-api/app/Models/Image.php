@@ -222,8 +222,8 @@ class Image
             $customNameWithoutExt = pathinfo($customName, PATHINFO_FILENAME);
 
             $safeName = preg_replace('/[^a-zA-Z0-9\-_]/', '-', $customNameWithoutExt);
-            $safeName = preg_replace('/-+/', '-', $safeName); // Remove hífens duplicados
-            $safeName = trim($safeName, '-'); // Remove hífens no início e fim
+            $safeName = preg_replace('/-+/', '-', $safeName); 
+            $safeName = trim($safeName, '-'); 
             
             if (!empty($safeName)) {
                 return $safeName . '.' . $extension;

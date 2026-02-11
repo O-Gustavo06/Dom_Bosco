@@ -44,7 +44,26 @@ function getImageUrl(product) {
   }
   // PRIORIDADE 3: Campos alternativos (fallback para compatibilidade)
   else {
-    imageField = product.image || product.image_url || product.imageUrl || product.imagem;
+    const altImage = product.image || product.image_url || product.imageUrl || product.imagem;
+    if (typeof altImage === 'string') {
+      const trimmed = altImage.trim();
+      if (trimmed.startsWith('[')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            imageField = parsed.length > 0 ? parsed[0] : null;
+          } else {
+            imageField = parsed;
+          }
+        } catch {
+          imageField = trimmed;
+        }
+      } else {
+        imageField = trimmed;
+      }
+    } else {
+      imageField = altImage;
+    }
   }
   
   if (!imageField) {
@@ -122,7 +141,23 @@ function getAllImages(product) {
   // PRIORIDADE 3: Campos alternativos (fallback)
   else {
     const altImage = product.image || product.image_url || product.imageUrl || product.imagem;
-    if (altImage) {
+    if (Array.isArray(altImage)) {
+      images = altImage.filter(img => img);
+    } else if (typeof altImage === 'string') {
+      const trimmed = altImage.trim();
+      if (trimmed) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          images = Array.isArray(parsed) ? parsed.filter(img => img) : (parsed ? [parsed] : []);
+        } catch {
+          if (trimmed.includes(',')) {
+            images = trimmed.split(',').map(img => img.trim()).filter(img => img);
+          } else {
+            images = [trimmed];
+          }
+        }
+      }
+    } else if (altImage) {
       images = [altImage];
     }
   }
@@ -146,12 +181,22 @@ function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
+    const getCategoryName = (item) => {
+      if (!item) return "";
+      if (item.category) return String(item.category);
+      const labels = ["", "Cadernos", "Canetas", "Papéis", "Mochilas"];
+      const id = Number(item.category_id || 0);
+      return labels[id] || "";
+    };
+
+    const categoryName = getCategoryName(product);
   const [quantity, setQuantity] = useState(1);
+  const [quantityInput, setQuantityInput] = useState("1");
   const { addToCart } = useCart();
   const { isDark } = useTheme();
   
   // Usar o estoque real da tabela inventory
-  const currentStock = product ? (product.inventory_quantity ?? product.stock) : 0;
+  const currentStock = Number(product?.inventory_quantity ?? product?.stock ?? 0);
   
   const allImages = getAllImages(product);
   const safeImageIndex = allImages.length > 0 
@@ -166,7 +211,8 @@ function ProductDetails() {
     setCurrentImageIndex(0); 
     setImageError(false); 
     setProduct(null);
-    setQuantity(1); // Reset quantity when product changes
+    setQuantity(1);
+    setQuantityInput("1");
     
     fetch(`http://localhost:8000/api/products/${id}`)
       .then((res) => {
@@ -183,22 +229,32 @@ function ProductDetails() {
       });
   }, [id]);
 
-  const handleIncreaseQuantity = () => {
-    if (quantity < product.stock) {
-      setQuantity(prev => prev + 1);
+  const clampQuantity = (value) => {
+    const minVal = 1;
+    if (currentStock > 0) {
+      return Math.min(Math.max(value, minVal), currentStock);
     }
+    return Math.max(value, minVal);
+  };
+
+  const handleIncreaseQuantity = () => {
+    const next = clampQuantity(quantity + 1);
+    setQuantity(next);
+    setQuantityInput(String(next));
   };
 
   const handleDecreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
-    }
+    const next = clampQuantity(quantity - 1);
+    setQuantity(next);
+    setQuantityInput(String(next));
   };
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addToCart(product);
-    }
+    const parsed = parseInt(quantityInput, 10);
+    const finalQty = clampQuantity(Number.isNaN(parsed) ? quantity : parsed);
+    setQuantity(finalQty);
+    setQuantityInput(String(finalQty));
+    addToCart(product, finalQty);
   };
 
   if (loading) {
@@ -409,7 +465,7 @@ function ProductDetails() {
                   boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                 }}
               >
-                {product.category}
+                {categoryName}
               </div>
             </div>
 
@@ -486,7 +542,7 @@ function ProductDetails() {
                   letterSpacing: "0.5px",
                 }}
               >
-                {product.category}
+                {categoryName}
               </span>
             </div>
 
@@ -663,15 +719,26 @@ function ProductDetails() {
                 
                 <input
                   type="number"
-                  value={quantity}
+                  value={quantityInput}
                   onChange={(e) => {
-                    const val = parseInt(e.target.value) || 1;
-                    if (val >= 1 && val <= currentStock) {
-                      setQuantity(val);
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setQuantityInput("");
+                      return;
                     }
+                    if (!/^[0-9]+$/.test(raw)) {
+                      return;
+                    }
+                    setQuantityInput(raw);
+                  }}
+                  onBlur={() => {
+                    const parsed = parseInt(quantityInput, 10);
+                    const next = clampQuantity(Number.isNaN(parsed) ? 1 : parsed);
+                    setQuantity(next);
+                    setQuantityInput(String(next));
                   }}
                   min="1"
-                  max={currentStock}
+                  max={currentStock > 0 ? currentStock : undefined}
                   style={{
                     flex: 1,
                     textAlign: "center",

@@ -12,6 +12,7 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    data_nascimento DATE,
     role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('admin', 'customer')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -27,7 +28,6 @@ CREATE TABLE products (
     price DECIMAL(10, 2) NOT NULL,
     image VARCHAR(255),
     category VARCHAR(100),
-    stock INTEGER DEFAULT 0,
     active BOOLEAN DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -95,6 +95,22 @@ CREATE TABLE inventory (
 CREATE INDEX idx_inventory_product_id ON inventory(product_id);
 CREATE INDEX idx_inventory_quantity ON inventory(quantity);
 
+CREATE TABLE inventory_movements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    change_amount INTEGER NOT NULL,
+    quantity_after INTEGER NOT NULL,
+    type VARCHAR(30) NOT NULL,
+    note TEXT,
+    user_id INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_inventory_movements_product_id ON inventory_movements(product_id);
+CREATE INDEX idx_inventory_movements_created_at ON inventory_movements(created_at);
+
 CREATE TABLE settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     key VARCHAR(100) NOT NULL UNIQUE,
@@ -106,25 +122,14 @@ CREATE TABLE settings (
 
 CREATE INDEX idx_settings_key ON settings(key);
 
-CREATE TABLE password_resets (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email VARCHAR(255) NOT NULL,
-    token VARCHAR(255) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_password_resets_email ON password_resets(email);
-CREATE INDEX idx_password_resets_token ON password_resets(token);
-
 
 INSERT INTO users (name, email, password, role) VALUES 
 ('Admin', 'admin@dombosco.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
 
-INSERT INTO products (name, description, price, category, stock, active) VALUES
-('Produto 1', 'Descrição do produto 1', 99.90, 'Categoria A', 50, 1),
-('Produto 2', 'Descrição do produto 2', 149.90, 'Categoria B', 30, 1),
-('Produto 3', 'Descrição do produto 3', 79.90, 'Categoria A', 20, 1);
+INSERT INTO products (name, description, price, category, active) VALUES
+('Produto 1', 'Descrição do produto 1', 99.90, 'Categoria A', 1),
+('Produto 2', 'Descrição do produto 2', 149.90, 'Categoria B', 1),
+('Produto 3', 'Descrição do produto 3', 79.90, 'Categoria A', 1);
 
 INSERT INTO inventory (product_id, quantity, min_quantity) VALUES
 (1, 50, 10),

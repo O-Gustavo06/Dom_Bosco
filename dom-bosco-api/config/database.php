@@ -40,6 +40,7 @@ class Database
 
             self::$pdo = new PDO("sqlite:$path");
             self::$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            self::$pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, true);
             self::$pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             
             self::$pdo->setAttribute(PDO::ATTR_TIMEOUT, 30);

@@ -179,36 +179,110 @@ class Order
     
     public function updateStatus(int $id, string $status): bool
     {
-        $stmt = $this->pdo->prepare("
-            UPDATE orders 
-            SET status = :status 
-            WHERE id = :id
-        ");
+        $this->pdo->beginTransaction();
 
-        return $stmt->execute([
-            ':id' => $id,
-            ':status' => $status
-        ]);
+        try {
+            $currentStmt = $this->pdo->prepare('SELECT status FROM orders WHERE id = :id');
+            $currentStmt->execute([':id' => $id]);
+            $current = $currentStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$current) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            $oldStatus = $current['status'];
+
+            $stmt = $this->pdo->prepare("
+                UPDATE orders
+                SET status = :status
+                WHERE id = :id
+            ");
+
+            $ok = $stmt->execute([
+                ':id' => $id,
+                ':status' => $status
+            ]);
+
+            if (!$ok) {
+                $this->pdo->rollBack();
+                return false;
+            }
+
+            if ($status === 'cancelled' && $oldStatus !== 'cancelled') {
+                $itemsStmt = $this->pdo->prepare('
+                    SELECT product_id, quantity
+                    FROM order_items
+                    WHERE order_id = :order_id
+                ');
+                $itemsStmt->execute([':order_id' => $id]);
+                $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $this->ensureInventoryMovementsTable();
+                $updateStmt = $this->pdo->prepare('
+                    UPDATE inventory
+                    SET quantity = quantity + :amount,
+                        last_update = CURRENT_TIMESTAMP
+                    WHERE product_id = :product_id
+                ');
+
+                foreach ($items as $item) {
+                    $updateStmt->execute([
+                        ':amount' => (int) $item['quantity'],
+                        ':product_id' => (int) $item['product_id']
+                    ]);
+
+                    $qtyStmt = $this->pdo->prepare('SELECT quantity FROM inventory WHERE product_id = :product_id');
+                    $qtyStmt->execute([':product_id' => (int) $item['product_id']]);
+                    $row = $qtyStmt->fetch(PDO::FETCH_ASSOC);
+                    $afterQty = (int) ($row['quantity'] ?? 0);
+
+                    $this->logInventoryMovement(
+                        (int) $item['product_id'],
+                        (int) $item['quantity'],
+                        $afterQty,
+                        'cancel',
+                        'order_id=' . $id,
+                        null
+                    );
+                }
+            }
+
+            $this->pdo->commit();
+
+            require_once __DIR__ . '/Product.php';
+            $productModel = new Product();
+            $itemsStmt = $this->pdo->prepare('SELECT DISTINCT product_id FROM order_items WHERE order_id = :order_id');
+            $itemsStmt->execute([':order_id' => $id]);
+            $productIds = $itemsStmt->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($productIds as $productId) {
+                $productModel->updateActiveStatusByStock((int) $productId);
+            }
+
+            return true;
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
     }
 
     public function create(array $data): int
     {
-        // Retry logic para lidar com database locks
+        
         $maxRetries = 3;
-        $retryDelay = 1; // segundos
+        $retryDelay = 1; 
         
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
                 return $this->attemptCreate($data);
             } catch (PDOException $e) {
-                // Se for erro de database locked e ainda temos tentativas
+                
                 if (strpos($e->getMessage(), 'database is locked') !== false && $attempt < $maxRetries) {
                     error_log("Tentativa $attempt de criar pedido falhou (database locked), tentando novamente...");
                     sleep($retryDelay);
-                    $retryDelay *= 2; // Exponential backoff
+                    $retryDelay *= 2; 
                     continue;
                 }
-                // Se não for locked ou acabaram as tentativas, propagar erro
+                
                 throw $e;
             }
         }
@@ -243,7 +317,7 @@ class Order
                     $insertUser->execute([
                         ':name' => $data['customer']['name'] ?? 'Cliente',
                         ':email' => $data['customer']['email'],
-                        ':password' => password_hash(uniqid(), PASSWORD_DEFAULT) // senha aleatória
+                        ':password' => password_hash(uniqid(), PASSWORD_DEFAULT) 
                     ]);
                     $userId = (int) $this->pdo->lastInsertId();
                 }
@@ -260,6 +334,44 @@ class Order
                 $deliveryHouseNumber = $data['customer']['houseNumber'] ?? null;
                 $deliveryCity = $data['customer']['city'] ?? null;
                 $deliveryZipcode = $data['customer']['zipCode'] ?? null;
+            }
+
+            $seedStmt = $this->pdo->prepare(
+                'INSERT INTO inventory (product_id, quantity, min_quantity)
+                 SELECT p.id, 0, 5
+                 FROM products p
+                 LEFT JOIN inventory i ON i.product_id = p.id
+                 WHERE i.product_id IS NULL'
+            );
+            $seedStmt->execute();
+
+            $requested = [];
+            foreach ($data['items'] as $item) {
+                $productId = (int) ($item['id'] ?? 0);
+                $qty = (int) ($item['quantity'] ?? 0);
+                if ($productId <= 0 || $qty <= 0) {
+                    throw new Exception('Item invalido no pedido');
+                }
+                $requested[$productId] = ($requested[$productId] ?? 0) + $qty;
+            }
+
+            $productIds = array_keys($requested);
+            $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+            $stockStmt = $this->pdo->prepare(
+                "SELECT product_id, quantity FROM inventory WHERE product_id IN ($placeholders)"
+            );
+            $stockStmt->execute($productIds);
+            $stockRows = $stockStmt->fetchAll(PDO::FETCH_ASSOC);
+            $stockMap = [];
+            foreach ($stockRows as $row) {
+                $stockMap[(int) $row['product_id']] = (int) $row['quantity'];
+            }
+
+            foreach ($requested as $productId => $qty) {
+                $available = $stockMap[$productId] ?? 0;
+                if ($available < $qty) {
+                    throw new Exception("Estoque insuficiente para o produto ID: {$productId}");
+                }
             }
 
             $stmt = $this->pdo->prepare("
@@ -280,7 +392,7 @@ class Order
 
             $orderId = (int) $this->pdo->lastInsertId();
 
-            // Inserir todos os itens do pedido em batch (muito mais rápido)
+            
             $itemsValues = [];
             $itemsParams = [];
             $paramIndex = 0;
@@ -301,13 +413,10 @@ class Order
                 $itemStmt->execute($itemsParams);
             }
 
-            // Decrementar estoque de todos os produtos com prepared statement reutilizável
-            require_once __DIR__ . '/Inventory.php';
-            $inventoryModel = new Inventory();
             
-            // Preparar o statement uma vez e reutilizar para todos os produtos (mais eficiente)
             require_once __DIR__ . '/Product.php';
             $productModel = new Product();
+            $this->ensureInventoryMovementsTable();
             $updateStmt = $this->pdo->prepare("
                 UPDATE inventory
                 SET quantity = quantity - :amount,
@@ -325,9 +434,25 @@ class Order
                 if ($updateStmt->rowCount() === 0) {
                     throw new Exception("Estoque insuficiente para o produto ID: {$item['id']}");
                 }
+
+                $productId = (int) $item['id'];
+                $qty = (int) $item['quantity'];
+                $stockMap[$productId] = ($stockMap[$productId] ?? 0) - $qty;
+                $this->logInventoryMovement(
+                    $productId,
+                    -$qty,
+                    $stockMap[$productId],
+                    'order',
+                    'order_id=' . $orderId,
+                    $userId
+                );
             }
 
             $this->pdo->commit();
+
+            foreach (array_keys($requested) as $productId) {
+                $productModel->updateActiveStatusByStock((int) $productId);
+            }
             return $orderId;
 
         } catch (Exception $e) {
@@ -336,9 +461,50 @@ class Order
         }
     }
 
-    /**
-     * Buscar pedidos de um usuário específico
-     */
+    private function ensureInventoryMovementsTable(): void
+    {
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS inventory_movements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_id INTEGER NOT NULL,
+                change_amount INTEGER NOT NULL,
+                quantity_after INTEGER NOT NULL,
+                type VARCHAR(30) NOT NULL,
+                note TEXT,
+                user_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )'
+        );
+    }
+
+    private function logInventoryMovement(
+        int $productId,
+        int $delta,
+        int $quantityAfter,
+        string $type,
+        ?string $note,
+        ?int $userId
+    ): void {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO inventory_movements
+                (product_id, change_amount, quantity_after, type, note, user_id, created_at)
+             VALUES
+                (:product_id, :change_amount, :quantity_after, :type, :note, :user_id, datetime(\'now\'))'
+        );
+
+        $stmt->execute([
+            ':product_id' => $productId,
+            ':change_amount' => $delta,
+            ':quantity_after' => $quantityAfter,
+            ':type' => $type,
+            ':note' => $note,
+            ':user_id' => $userId
+        ]);
+    }
+
+    
     public function getUserOrders(int $userId): array
     {
         $stmt = $this->pdo->prepare("
@@ -365,7 +531,7 @@ class Order
         $stmt->execute([':user_id' => $userId]);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Para cada pedido, buscar os itens
+        
         foreach ($orders as &$order) {
             $itemsStmt = $this->pdo->prepare("
                 SELECT 
@@ -387,9 +553,7 @@ class Order
         return $orders;
     }
 
-    /**
-     * Atualizar status de rastreamento
-     */
+    
     public function updateTrackingStatus(int $id, string $trackingStatus): bool
     {
         $stmt = $this->pdo->prepare("

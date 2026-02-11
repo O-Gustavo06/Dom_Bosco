@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api\Admin;
 
 require_once __DIR__ . '/../../../../Models/User.php';
@@ -20,7 +19,6 @@ class UserController
         $this->userModel = new \User();
     }
 
-    
     public function index(): void
     {
         $user = Authenticate::handle();
@@ -28,13 +26,13 @@ class UserController
 
         try {
             $users = $this->userModel->getAll();
+
             Response::json($users);
         } catch (\Exception $e) {
             Response::error('Erro ao buscar usuários: ' . $e->getMessage(), 500);
         }
     }
 
-    
     public function store(): void
     {
         $user = Authenticate::handle();
@@ -42,8 +40,8 @@ class UserController
 
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
-            Response::error('Nome, email e senha são obrigatórios');
+        if (empty($data['name']) || empty($data['email']) || empty($data['password']) || empty($data['birthdate'])) {
+            Response::error('Nome, email, senha e data de aniversário são obrigatórios');
         }
 
         $role = $data['role'] ?? 'customer';
@@ -53,10 +51,17 @@ class UserController
         }
 
         try {
+            $birthdate = $this->normalizeBirthdate($data['birthdate']);
+
+            if (!$birthdate) {
+                Response::error('Data de aniversário inválida');
+            }
+
             $userId = $this->userModel->create(
                 $data['name'],
                 $data['email'],
                 $data['password'],
+                $birthdate,
                 $role
             );
 
@@ -69,7 +74,6 @@ class UserController
         }
     }
 
-    
     public function update(int $id): void
     {
         $user = Authenticate::handle();
@@ -110,7 +114,6 @@ class UserController
         }
     }
 
-    
     public function destroy(int $id): void
     {
         $user = Authenticate::handle();
@@ -129,5 +132,17 @@ class UserController
         } catch (\Exception $e) {
             Response::error($e->getMessage());
         }
+    }
+
+    private function normalizeBirthdate(string $birthdate): ?string
+    {
+        $birthdate = trim($birthdate);
+        $dt = \DateTime::createFromFormat('d/m/Y', $birthdate);
+
+        if (!$dt || $dt->format('d/m/Y') !== $birthdate) {
+            return null;
+        }
+
+        return $dt->format('Y-m-d');
     }
 }

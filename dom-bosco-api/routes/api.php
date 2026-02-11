@@ -1,11 +1,8 @@
 <?php
 
-/**
- * API Routes - Dom Bosco API
- * Versão Laravel-style com namespaces e middleware
- */
 
-// Desabilitar display de erros HTML
+
+
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
@@ -17,6 +14,8 @@ require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/ProductController.php
 require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/UserController.php';
 require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/OrderController.php';
 require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/EmailLogController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/CategoryController.php';
+require_once __DIR__ . '/../app/Http/Controllers/Api/Admin/InventoryController.php';
 require_once __DIR__ . '/../app/Http/Controllers/Api/ImageController.php';
 require_once __DIR__ . '/../app/Http/Middleware/Cors.php';
 require_once __DIR__ . '/../config/database.php';
@@ -29,12 +28,14 @@ use App\Http\Controllers\Api\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\EmailLogController as AdminEmailLogController;
+use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Api\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\ImageController;
 use App\Http\Middleware\Cors;
 
 try {
 
-// Aplicar CORS em todas as requisições
+
 Cors::handle();
 
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -50,6 +51,8 @@ $adminProductController = new AdminProductController();
 $adminUserController    = new AdminUserController();
 $adminEmailLogController = new AdminEmailLogController();
 $adminOrderController   = new AdminOrderController();
+$adminCategoryController = new AdminCategoryController();
+$inventoryController    = new AdminInventoryController();
 $imageController        = new ImageController();
 
 
@@ -65,11 +68,6 @@ if ($method === 'POST' && $uri === '/api/login') {
 
 if ($method === 'POST' && $uri === '/api/forgot-password') {
     $authController->forgotPassword();
-    exit;
-}
-
-if ($method === 'POST' && $uri === '/api/reset-password') {
-    $authController->resetPassword();
     exit;
 }
 
@@ -106,6 +104,11 @@ if ($method === 'GET' && $uri === '/api/settings') {
 
 if ($method === 'GET' && $uri === '/api/admin/products') {
     $adminProductController->index();
+    exit;
+}
+
+if ($method === 'GET' && $uri === '/api/admin/categories') {
+    $adminCategoryController->index();
     exit;
 }
 
@@ -270,6 +273,11 @@ if ($method === 'GET' && $uri === '/api/admin/inventory') {
     exit;
 }
 
+if ($method === 'GET' && $uri === '/api/admin/inventory/movements') {
+    $inventoryController->movements();
+    exit;
+}
+
 if ($method === 'GET' && $uri === '/api/admin/inventory/low-stock') {
     $inventoryController->lowStock();
     exit;
@@ -325,4 +333,20 @@ echo json_encode([
         'file' => basename($e->getFile()),
         'line' => $e->getLine()
     ]);
+}
+
+
+/* ADMIN users update/delete */
+if ($method === "PUT" && preg_match("#^/api/admin/users/(\d+)$#", $uri, $m)) {
+    $user = \App\Http\Middleware\Authenticate::handle();
+    \App\Http\Middleware\CheckRole::admin($user);
+    (new \App\Http\Controllers\Api\Admin\UserController())->update((int)$m[1]);
+    return;
+}
+
+if ($method === "DELETE" && preg_match("#^/api/admin/users/(\d+)$#", $uri, $m)) {
+    $user = \App\Http\Middleware\Authenticate::handle();
+    \App\Http\Middleware\CheckRole::admin($user);
+    (new \App\Http\Controllers\Api\Admin\UserController())->destroy((int)$m[1]);
+    return;
 }

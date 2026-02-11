@@ -5,6 +5,7 @@ import AdminProducts from "./AdminProducts";
 import AdminUsers from "./AdminUsers";
 import Settings from "./Settings";
 import AdminOrders from "./AdminOrders";
+import AdminInventory from "./AdminInventory";
 
 export default function Dashboard() {
   const { user, token, logout } = useAuth();
@@ -49,7 +50,7 @@ export default function Dashboard() {
       >
         <div style={{ marginBottom: "32px" }}>
           <h2 style={{ margin: "0 0 8px 0", color: "var(--text-primary)" }}>
-            🎛️ Admin
+            🧠 Admin
           </h2>
           <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "12px" }}>
             Bem-vindo, {user?.name}
@@ -118,6 +119,26 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => setActiveTab("inventory")}
+            style={{
+              width: "100%",
+              padding: "12px 16px",
+              textAlign: "left",
+              backgroundColor: activeTab === "inventory" ? "#7c3aed" : "transparent",
+              color: activeTab === "inventory" ? "white" : "var(--text-primary)",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              marginBottom: "8px",
+              fontSize: "16px",
+              fontWeight: "600",
+              transition: "all 0.3s ease",
+            }}
+          >
+            🛡️ Estoque
+          </button>
+
+          <button
             onClick={() => setActiveTab("settings")}
             style={{
               width: "100%",
@@ -164,6 +185,7 @@ export default function Dashboard() {
         {activeTab === "products" && <AdminProducts />}
         {activeTab === "users" && <AdminUsers />}
         {activeTab === "orders" && <AdminOrders />}
+        {activeTab === "inventory" && <AdminInventory />}
         {activeTab === "settings" && <Settings />}
       </main>
     </div>

@@ -20,7 +20,7 @@ class SMTPMailer
 
     public function __construct()
     {
-        // Carregar configurações do .env
+        
         require_once __DIR__ . '/../../config/env.php';
         
         $this->host = env('SMTP_HOST', 'smtp.gmail.com');
@@ -180,21 +180,21 @@ class SMTPMailer
     {
         $headers = [];
         
-        // From
+        
         $from = $this->fromName ? "\"$this->fromName\" <{$this->from}>" : $this->from;
         $headers[] = "From: $from";
         
-        // To
+        
         $toList = [];
         foreach ($this->to as $recipient) {
             $toList[] = $recipient['name'] ? "\"{$recipient['name']}\" <{$recipient['email']}>" : $recipient['email'];
         }
         $headers[] = "To: " . implode(', ', $toList);
         
-        // Subject
+        
         $headers[] = "Subject: =?UTF-8?B?" . base64_encode($this->subject) . "?=";
         
-        // MIME
+        
         $headers[] = "MIME-Version: 1.0";
         
         if ($this->isHTML) {
@@ -218,7 +218,7 @@ class SMTPMailer
         
         $code = substr($response, 0, 3);
         
-        // Códigos de sucesso: 2xx e 3xx
+        
         if ($code[0] !== '2' && $code[0] !== '3') {
             throw new \Exception("Comando falhou: $command | Resposta: $response");
         }

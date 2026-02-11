@@ -323,9 +323,7 @@ class EmailService
         ";
     }
     
-    /**
-     * Template de atualização de status
-     */
+    
     private function getStatusUpdateTemplate(array $order, string $customerName, string $statusLabel): string
     {
         $statusIcons = [
@@ -421,9 +419,7 @@ class EmailService
         ";
     }
     
-    /**
-     * Salvar e-mail em arquivo para debugging
-     */
+    
     private function logEmail(string $to, string $subject, string $body): void
     {
         $logDir = __DIR__ . '/../../storage/logs/emails';
@@ -444,34 +440,5 @@ class EmailService
         ";
         
         file_put_contents($filename, $logContent);
-    }
-
-    /**
-     * Envia e-mail para redefinição de senha com token
-     */
-    public function sendPasswordReset(string $email, string $name, string $token): bool
-    {
-        try {
-            $subject = "🔒 Redefinição de senha";
-            $resetLink = "http://localhost:3000/reset-password?token={$token}";
-
-            $htmlBody = "
-            <p>Olá <strong>{$name}</strong>,</p>
-            <p>Recebemos uma solicitação para redefinir sua senha. Clique no link abaixo para criar uma nova senha. O link expira em 1 hora.</p>
-            <p><a href=\"{$resetLink}\">Redefinir minha senha</a></p>
-            <p>Se você não solicitou essa alteração, ignore este e-mail.</p>
-            ";
-
-            return $this->sendEmail(
-                $email, 
-                $subject, 
-                $htmlBody,
-                'password_reset',
-                $name
-            );
-        } catch (\Exception $e) {
-            error_log("Erro ao enviar e-mail de reset de senha: " . $e->getMessage());
-            return false;
-        }
     }
 }

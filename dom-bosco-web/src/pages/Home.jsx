@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { getProducts } from "../api/api";
+import { useTheme } from "../contexts/ThemeContext";
 import ProductCard from "../components/ProductCard";
 
 function Home() {
+  const { isDark } = useTheme();
   const [allProducts, setAllProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,9 +30,17 @@ function Home() {
       });
   }, []);
 
+  const getCategoryName = (product) => {
+    if (!product) return "";
+    if (product.category) return String(product.category);
+    const labels = ["", "Cadernos", "Canetas", "Papéis", "Mochilas"];
+    const id = Number(product.category_id || 0);
+    return labels[id] || "";
+  };
+
   // Extrair categorias únicas
   const categories = useMemo(() => {
-    const cats = [...new Set(allProducts.map((p) => p.category))].filter(Boolean);
+    const cats = [...new Set(allProducts.map((p) => getCategoryName(p)))].filter(Boolean);
     return cats.sort();
   }, [allProducts]);
 
@@ -40,7 +50,7 @@ function Home() {
     
     // Filtrar por categoria
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((product) => product.category === selectedCategory);
+      filtered = filtered.filter((product) => getCategoryName(product) === selectedCategory);
     }
     
     // Filtrar por termo de pesquisa
@@ -49,7 +59,7 @@ function Home() {
       filtered = filtered.filter((product) => 
         product.name?.toLowerCase().includes(searchLower) ||
         product.description?.toLowerCase().includes(searchLower) ||
-        product.category?.toLowerCase().includes(searchLower)
+        getCategoryName(product).toLowerCase().includes(searchLower)
       );
     }
     
@@ -439,49 +449,7 @@ function Home() {
       </div>
 
       <div className="container">
-      <div
-        className="fade-in"
-        style={{
-          marginBottom: "48px",
-        }}
-      >
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <h1
-            style={{
-              fontSize: "30px",
-              fontWeight: "800",
-              marginBottom: "16px",
-              letterSpacing: "-1.5px",
-              background: "linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            Todos os Produtos
-          </h1>
-
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "12px",
-            padding: "10px 24px",
-            background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
-            borderRadius: "50px",
-            marginBottom: "36px",
-            border: "2px solid #e2e8f0",
-          }}>
-            <span style={{ fontSize: "20px" }}>📦</span>
-            <span style={{
-              fontSize: "16px",
-              fontWeight: "700",
-              color: "#7c3aed",
-            }}>
-              {products.length} {products.length === 1 ? "produto encontrado" : "produtos encontrados"}
-            </span>
-          </div>
-
-          {/* Barra de Pesquisa Melhorada */}
+        <div className="fade-in" style={{ marginBottom: "48px" }}>
           <div
             style={{
               maxWidth: "650px",
@@ -494,21 +462,25 @@ function Home() {
                 position: "relative",
                 display: "flex",
                 alignItems: "center",
-                background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                background: isDark ? "#1f1f1f" : "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                 borderRadius: "60px",
                 padding: "6px 10px 6px 24px",
-                boxShadow: "0 10px 40px rgba(0, 0, 0, 0.08)",
-                border: "3px solid #e2e8f0",
+                boxShadow: isDark ? "0 10px 40px rgba(0, 0, 0, 0.4)" : "0 10px 40px rgba(0, 0, 0, 0.08)",
+                border: isDark ? "3px solid #2a2a2a" : "3px solid #e2e8f0",
                 transition: "all 0.3s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 15px 50px rgba(168, 85, 247, 0.25)";
-                e.currentTarget.style.borderColor = "#a855f7";
+                e.currentTarget.style.boxShadow = isDark
+                  ? "0 15px 50px rgba(0, 0, 0, 0.6)"
+                  : "0 15px 50px rgba(168, 85, 247, 0.25)";
+                e.currentTarget.style.borderColor = isDark ? "#3a3a3a" : "#a855f7";
                 e.currentTarget.style.transform = "translateY(-2px)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "0 10px 40px rgba(0, 0, 0, 0.08)";
-                e.currentTarget.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.boxShadow = isDark
+                  ? "0 10px 40px rgba(0, 0, 0, 0.4)"
+                  : "0 10px 40px rgba(0, 0, 0, 0.08)";
+                e.currentTarget.style.borderColor = isDark ? "#2a2a2a" : "#e2e8f0";
                 e.currentTarget.style.transform = "translateY(0)";
               }}
             >
@@ -537,7 +509,7 @@ function Home() {
                   fontSize: "16px",
                   padding: "14px 12px",
                   background: "transparent",
-                  color: "#334155",
+                  color: isDark ? "#e5e7eb" : "#334155",
                   fontWeight: "500",
                 }}
               />
@@ -545,7 +517,7 @@ function Home() {
                 <button
                   onClick={() => setSearchTerm("")}
                   style={{
-                    background: "linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)",
+                    background: isDark ? "#2a2a2a" : "linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)",
                     border: "none",
                     borderRadius: "50%",
                     width: "36px",
@@ -558,7 +530,7 @@ function Home() {
                     marginRight: "4px",
                     fontWeight: "bold",
                     fontSize: "16px",
-                    color: "#64748b",
+                    color: isDark ? "#cbd5e1" : "#64748b",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)";
@@ -595,15 +567,15 @@ function Home() {
             flexWrap: "wrap",
             marginBottom: "48px",
             padding: "20px",
-            background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+            background: isDark ? "#242424" : "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
             borderRadius: "30px",
-            boxShadow: "inset 0 2px 10px rgba(0, 0, 0, 0.05)",
+            boxShadow: isDark ? "inset 0 2px 10px rgba(0, 0, 0, 0.6)" : "inset 0 2px 10px rgba(0, 0, 0, 0.05)",
           }}
         >
           <span style={{
             fontSize: "14px",
             fontWeight: "700",
-            color: "#64748b",
+            color: isDark ? "#cbd5e1" : "#64748b",
             marginRight: "8px",
             letterSpacing: "0.5px",
           }}>
@@ -697,7 +669,6 @@ function Home() {
             );
           })}
         </div>
-      </div>
 
       {products.length === 0 ? (
         <div style={{

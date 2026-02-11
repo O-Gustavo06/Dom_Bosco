@@ -9,6 +9,7 @@ function Register() {
   const [form, setForm] = useState({
     name: "",
     email: "",
+    birthdate: "",
     password: "",
   });
 
@@ -24,6 +25,21 @@ function Register() {
   // Validação de senha
   const isValidPassword = (password) => {
     return password.length >= 6;
+  };
+
+  const isValidBirthdate = (birthdate) => {
+    const match = /^\d{2}\/\d{2}\/\d{4}$/.test(birthdate);
+    if (!match) {
+      return false;
+    }
+
+    const [day, month, year] = birthdate.split("/").map(Number);
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+      return false;
+    }
+
+    return date <= new Date();
   };
 
   const handleChange = (e) => {
@@ -52,6 +68,16 @@ function Register() {
 
     if (!form.password) {
       setError("Senha é obrigatória");
+      return;
+    }
+
+    if (!form.birthdate) {
+      setError("Data de nascimento é obrigatória");
+      return;
+    }
+
+    if (!isValidBirthdate(form.birthdate)) {
+      setError("Data de nascimento inválida. Use o formato: DD/MM/AAAA");
       return;
     }
 
@@ -124,6 +150,18 @@ function Register() {
                 name="email"
                 required
                 value={form.email}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ color: "var(--text-secondary)" }}>Data de nascimento</label>
+              <input
+                type="text"
+                name="birthdate"
+                placeholder="DD/MM/AAAA"
+                required
+                value={form.birthdate}
                 onChange={handleChange}
               />
             </div>

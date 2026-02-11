@@ -7,6 +7,10 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [form, setForm] = useState({ name: "", email: "", role: "customer" });
+
   useEffect(() => {
     fetchUsers();
   }, [token]);
@@ -14,11 +18,11 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      
+
       if (!token) {
         throw new Error("Token não encontrado. Faça login novamente.");
       }
-      
+
       const response = await fetch("http://localhost:8000/api/admin/users", {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -47,6 +51,60 @@ export default function AdminUsers() {
       console.error("Erro ao buscar usuários:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openEdit = (user) => {
+    setEditingUser(user);
+    setForm({ name: user.name || "", email: user.email || "", role: user.role || "customer" });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingUser(null);
+    setForm({ name: "", email: "", role: "customer" });
+  };
+
+  const handleSave = async () => {
+    if (!editingUser) return;
+    try {
+      const payload = { name: form.name, email: form.email, role: (form.role || 'customer').toLowerCase() };
+      const res = await fetch(`http://localhost:8000/api/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || json.message || 'Erro ao atualizar usuário');
+
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...payload } : u));
+      closeModal();
+    } catch (err) {
+      console.error('Erro ao atualizar usuário:', err);
+      setError('❌ ' + (err.message || 'Erro ao atualizar usuário'));
+    }
+  };
+
+  const handleDelete = async (user) => {
+    if (!window.confirm('Confirma remoção deste usuário?')) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/admin/users/${user.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || json.message || 'Erro ao remover usuário');
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+    } catch (err) {
+      console.error('Erro ao remover usuário:', err);
+      setError('❌ ' + (err.message || 'Erro ao remover usuário'));
     }
   };
 
@@ -97,6 +155,7 @@ export default function AdminUsers() {
                 <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Nome</th>
                 <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Email</th>
                 <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Função</th>
+                <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Ações</th>
                 <th style={{ padding: "16px", textAlign: "left", color: "var(--text-primary)", fontWeight: "600" }}>Cadastro</th>
               </tr>
             </thead>
@@ -123,6 +182,10 @@ export default function AdminUsers() {
                       {user.role === "admin" ? "👑 Admin" : "👤 Cliente"}
                     </span>
                   </td>
+                  <td style={{ padding: "16px" }}>
+                    <button onClick={() => openEdit(user)} style={{ marginRight: 8 }}>Editar</button>
+                    <button onClick={() => handleDelete(user)}>Remover</button>
+                  </td>
                   <td style={{ padding: "16px", color: "var(--text-secondary)", fontSize: "14px" }}>
                     {new Date(user.created_at).toLocaleDateString("pt-BR")}
                   </td>
@@ -130,6 +193,33 @@ export default function AdminUsers() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div style={{ background: 'var(--surface)', padding: 20, borderRadius: 8, width: 440 }}>
+            <h3 style={{ marginTop: 0 }}>Editar usuário</h3>
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ display: 'block', marginBottom: 4 }}>Nome</label>
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} style={{ width: '100%', padding: 8 }} />
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <label style={{ display: 'block', marginBottom: 4 }}>Email</label>
+              <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} style={{ width: '100%', padding: 8 }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', marginBottom: 4 }}>Função</label>
+              <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} style={{ width: '100%', padding: 8 }}>
+                <option value="customer">Cliente</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <button onClick={closeModal} style={{ marginRight: 8 }}>Cancelar</button>
+              <button onClick={handleSave}>Salvar</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -23,7 +23,7 @@ function loadEnv($path = null) {
             $name = trim($name);
             $value = trim($value);
             
-            $value = trim($value, '"\'');
+            $value = trim($value, '"\'");
             
             if (!array_key_exists($name, $_ENV)) {
                 $_ENV[$name] = $value;

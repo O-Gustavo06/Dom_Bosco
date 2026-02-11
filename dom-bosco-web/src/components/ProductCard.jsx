@@ -71,6 +71,17 @@ function ProductCard({ product }) {
   const { addToCart } = useCart();
   const [imageError, setImageError] = useState(false);
   const imageUrl = getImageUrl(product);
+  const [quantity, setQuantity] = useState(1);
+
+  const getCategoryName = (item) => {
+    if (!item) return "";
+    if (item.category) return String(item.category);
+    const labels = ["", "Cadernos", "Canetas", "Papéis", "Mochilas"];
+    const id = Number(item.category_id || 0);
+    return labels[id] || "";
+  };
+
+  const categoryName = getCategoryName(product);
   
   const hasMultipleImages = () => {
     if (!product.image) return false;
@@ -172,9 +183,9 @@ function ProductCard({ product }) {
       </div>
 
       <div style={{ padding: "24px", flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        {product.category && (
+        {categoryName && (
           <span className="badge-category" style={{ marginBottom: "12px" }}>
-            {product.category}
+            {categoryName}
           </span>
         )}
 
@@ -229,32 +240,69 @@ function ProductCard({ product }) {
           </span>
         </div>
 
-        <button
-          className="purple"
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginTop: "auto",
+          }}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            addToCart(product);
-          }}
-          style={{
-            width: "100%",
-            marginTop: "auto",
-            padding: "12px 20px",
-            fontSize: "14px",
-            fontWeight: "600",
-            borderRadius: "10px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            border: "none",
-            cursor: "pointer",
-            boxShadow: "0 8px 20px rgba(168, 85, 247, 0.35)",
           }}
         >
-          <span>🛒</span>
-          <span>Adicionar</span>
-        </button>
+          <input
+            type="number"
+            min="1"
+            value={quantity}
+            onChange={(e) => {
+              const val = parseInt(e.target.value, 10);
+              if (Number.isNaN(val)) {
+                setQuantity(1);
+                return;
+              }
+              setQuantity(Math.max(1, val));
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+            style={{
+              width: "70px",
+              textAlign: "center",
+              fontSize: "14px",
+              fontWeight: "600",
+              padding: "10px 8px",
+              borderRadius: "10px",
+              border: "1px solid var(--border-color)",
+              background: "var(--surface)",
+              color: "var(--text-primary)",
+            }}
+          />
+          <button
+            className="purple"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              addToCart(product, quantity);
+            }}
+            style={{
+              flex: 1,
+              padding: "12px 20px",
+              fontSize: "14px",
+              fontWeight: "600",
+              borderRadius: "10px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 8px 20px rgba(168, 85, 247, 0.35)",
+            }}
+          >
+            <span>🛒</span>
+            <span>Adicionar</span>
+          </button>
+        </div>
       </div>
     </div>
     </Link>

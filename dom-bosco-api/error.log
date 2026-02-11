@@ -1,8 +1,0 @@
-[01-Feb-2026 16:59:07 Europe/Berlin] PHP Fatal error:  Uncaught Error: Class "JWT" not found in C:\xampp\htdocs\Dom_Bosco\dom-bosco-api\test-my-orders-endpoint.php:27
-Stack trace:
-#0 {main}
-  thrown in C:\xampp\htdocs\Dom_Bosco\dom-bosco-api\test-my-orders-endpoint.php on line 27
-[01-Feb-2026 16:59:28 Europe/Berlin] PHP Fatal error:  Uncaught Error: Class "JWT" not found in C:\xampp\htdocs\Dom_Bosco\dom-bosco-api\test-my-orders-endpoint.php:27
-Stack trace:
-#0 {main}
-  thrown in C:\xampp\htdocs\Dom_Bosco\dom-bosco-api\test-my-orders-endpoint.php on line 27

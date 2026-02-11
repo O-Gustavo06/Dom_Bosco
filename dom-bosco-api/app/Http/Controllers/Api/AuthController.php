@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 require_once __DIR__ . '/../../../Models/User.php';
 require_once __DIR__ . '/../../../Utils/JWT.php';
 require_once __DIR__ . '/../../Response.php';
-require_once __DIR__ . '/../../../Services/EmailService.php';
+require_once __DIR__ . '/../../../Utils/Logger.php';
 
 use App\Http\Response;
 use App\Utils\JWT;
@@ -24,8 +24,8 @@ class AuthController
     {
         $data = json_decode(file_get_contents('php://input'), true);
 
-        if (empty($data['name']) || empty($data['email']) || empty($data['password'])) {
-            Response::error('Nome, email e senha são obrigatórios');
+        if (empty($data['name']) || empty($data['email']) || empty($data['password']) || empty($data['birthdate'])) {
+            Response::error('Nome, email, senha e data de aniversário são obrigatórios');
         }
 
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
@@ -41,10 +41,17 @@ class AuthController
 
             $role = str_ends_with($email, '@papelaria.com') ? 'admin' : 'customer';
 
+            $birthdate = $this->normalizeBirthdate($data['birthdate']);
+
+            if (!$birthdate) {
+                Response::error('Data de aniversário inválida');
+            }
+
             $userId = $this->userModel->create(
                 trim($data['name']),
                 $email,
                 $data['password'],
+                $birthdate,
                 $role
             );
 
@@ -105,83 +112,57 @@ class AuthController
 
     public function forgotPassword(): void
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $rawInput = file_get_contents('php://input');
+        $logger = new \Logger('debug_sql.log');
+        $logger->info('forgotPassword raw input', ['raw_prefix' => substr($rawInput, 0, 200)]);
+        $data = json_decode($rawInput, true);
 
-        if (empty($data['email'])) {
-            Response::error('Email é obrigatório');
+        if (empty($data['email']) || empty($data['birthdate']) || empty($data['new_password'])) {
+            Response::error('Email, data de aniversário e nova senha são obrigatórios');
         }
 
         $email = strtolower(trim($data['email']));
+        $birthdate = $this->normalizeBirthdate($data['birthdate']);
 
-        $user = $this->userModel->findByEmail($email);
-
-        if (!$user) {
-            Response::success(['sent' => true], 'Se o email existir, um link foi enviado');
+        if (!$birthdate) {
+            Response::error('Data de aniversário inválida');
         }
-
-        $token = bin2hex(random_bytes(32));
-        $expires = time() + 3600; 
 
         try {
-            $pdo = \Database::connection();
-            $stmt = $pdo->prepare('INSERT INTO password_resets (email, token, expires_at, created_at) VALUES (:email, :token, :expires_at, datetime(\'now\'))');
-            $stmt->execute([
-                ':email' => $email,
-                ':token' => $token,
-                ':expires_at' => $expires
-            ]);
-
-            $emailService = new \App\Services\EmailService();
-            $name = $user['name'] ?? 'Cliente';
-            $emailService->sendPasswordReset($email, $name, $token);
-
-            Response::success(['sent' => true], 'Se o email existir, um link foi enviado');
-        } catch (\Exception $e) {
-            Response::error('Erro ao processar solicitação');
-        }
-    }
-
- 
-    public function resetPassword(): void
-    {
-        $data = json_decode(file_get_contents('php://input'), true);
-
-        if (empty($data['token']) || empty($data['password'])) {
-            Response::error('Token e nova senha são obrigatórios');
-        }
-
-        $token = $data['token'];
-        $newPassword = $data['password'];
-
-        try {
-            $pdo = \Database::connection();
-            $stmt = $pdo->prepare('SELECT email, expires_at FROM password_resets WHERE token = :token LIMIT 1');
-            $stmt->execute([':token' => $token]);
-            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-            if (!$row) {
-                Response::error('Token inválido ou expirado', 400);
-            }
-
-            if ((int)$row['expires_at'] < time()) {
-                Response::error('Token expirado', 400);
-            }
-
-            $email = $row['email'];
-            $user = $this->userModel->findByEmail($email);
+            $user = $this->userModel->findByEmailAndBirthdate($email, $birthdate);
 
             if (!$user) {
-                Response::error('Usuário não encontrado', 404);
+                Response::error('Dados inválidos', 400);
             }
 
-            $this->userModel->setPassword((int)$user['id'], $newPassword);
+            try {
+                $this->userModel->setPassword((int) $user['id'], $data['new_password']);
+                Response::success(['updated' => true], 'Senha atualizada com sucesso');
+            } catch (\PDOException $e) {
+                // Fallback: open a fresh PDO connection directly to the SQLite file
+                try {
+                    $dbPath = realpath(__DIR__ . '/../../../../BANCO.db');
+                    if ($dbPath && file_exists($dbPath)) {
+                        $pdo2 = new \PDO('sqlite:' . $dbPath);
+                        $pdo2->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                        $hash = password_hash($data['new_password'], PASSWORD_BCRYPT);
+                        $stmt2 = $pdo2->prepare('UPDATE users SET password = ? WHERE id = ?');
+                        $stmt2->bindValue(1, $hash, \PDO::PARAM_STR);
+                        $stmt2->bindValue(2, (int)$user['id'], \PDO::PARAM_INT);
+                        $ok = $stmt2->execute();
+                        if ($ok) {
+                            Response::success(['updated' => true], 'Senha atualizada com sucesso (fallback)');
+                        }
+                    }
+                } catch (\Exception $ex) {
+                    // ignore and fall through to error response below
+                }
 
-            $del = $pdo->prepare('DELETE FROM password_resets WHERE token = :token');
-            $del->execute([':token' => $token]);
-
-            Response::success(['updated' => true], 'Senha atualizada com sucesso');
+                // Rethrow original exception so caller sees failure if fallback didn't work
+                throw $e;
+            }
         } catch (\Exception $e) {
-            Response::error('Erro ao resetar senha');
+            Response::error('Erro ao atualizar senha: ' . $e->getMessage());
         }
     }
 
@@ -228,5 +209,17 @@ class AuthController
         } catch (\Exception $e) {
             Response::error('Erro ao alterar senha');
         }
+    }
+
+    private function normalizeBirthdate(string $birthdate): ?string
+    {
+        $birthdate = trim($birthdate);
+        $dt = \DateTime::createFromFormat('d/m/Y', $birthdate);
+
+        if (!$dt || $dt->format('d/m/Y') !== $birthdate) {
+            return null;
+        }
+
+        return $dt->format('Y-m-d');
     }
 }

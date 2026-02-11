@@ -83,28 +83,43 @@ function Header() {
               width: "48px",
               height: "48px",
               borderRadius: "50%",
-              background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+              background: "linear-gradient(135deg, #8c1af7 0%, #57052e 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: "24px",
               fontWeight: "800",
               color: "white",
-              boxShadow: "0 4px 12px rgba(168, 85, 247, 0.3)",
+              boxShadow: "0 4px 12px rgba(132, 5, 250, 0.3)",
             }}
           >
-            D
+            DB
           </div>
           <span
             style={{
               fontSize: "24px",
               fontWeight: "800",
-              color: "#7c3aed",
-              letterSpacing: "-0.5px",
+              color: "#4807b7",
+              letterSpacing: "-1px",
             }}
           >
             Dom Bosco
           </span>
+          {user?.name && (
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: "600",
+                color: "var(--text-secondary)",
+                background: "var(--surface-gray)",
+                padding: "6px 10px",
+                borderRadius: "999px",
+                border: "1px solid var(--border-color)",
+              }}
+            >
+              {user.name}
+            </span>
+          )}
         </Link>
 
         <nav style={{ display: "flex", gap: "4px", alignItems: "center" }}>

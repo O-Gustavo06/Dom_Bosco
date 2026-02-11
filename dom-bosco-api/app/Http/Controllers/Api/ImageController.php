@@ -75,13 +75,20 @@ class ImageController
             exit;
         }
 
-        if (!$this->productExists((int) $productId)) {
-            $this->logger->warning('Upload falhou: Produto não encontrado', [
-                'user_id' => $userId,
-                'product_id' => $productId
-            ]);
-            http_response_code(404);
-            echo json_encode(['error' => 'Produto não encontrado']);
+        try {
+            if (!$this->productExists((int) $productId)) {
+                $this->logger->warning('Upload falhou: Produto não encontrado', [
+                    'user_id' => $userId,
+                    'product_id' => $productId
+                ]);
+                http_response_code(404);
+                echo json_encode(['error' => 'Produto não encontrado']);
+                exit;
+            }
+        } catch (\Throwable $e) {
+            $this->logger->exception($e, 'Erro ao verificar existência do produto');
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno do servidor']);
             exit;
         }
 
@@ -134,10 +141,7 @@ class ImageController
             ]);
             http_response_code(500);
             echo json_encode([
-                'error' => 'Erro interno do servidor',
-                'details' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'error' => 'Erro interno do servidor'
             ]);
         }
     }
@@ -147,13 +151,20 @@ class ImageController
         $payload = $this->ensureAdmin();
         $userId = $payload['id'] ?? 'unknown';
 
-        if (!$this->productExists($productId)) {
-            $this->logger->warning('Listagem de imagens falhou: Produto não encontrado', [
-                'user_id' => $userId,
-                'product_id' => $productId
-            ]);
-            http_response_code(404);
-            echo json_encode(['error' => 'Produto não encontrado']);
+        try {
+            if (!$this->productExists($productId)) {
+                $this->logger->warning('Listagem de imagens falhou: Produto não encontrado', [
+                    'user_id' => $userId,
+                    'product_id' => $productId
+                ]);
+                http_response_code(404);
+                echo json_encode(['error' => 'Produto não encontrado']);
+                exit;
+            }
+        } catch (\Throwable $e) {
+            $this->logger->exception($e, 'Erro ao verificar existência do produto');
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno do servidor']);
             exit;
         }
 
@@ -200,14 +211,21 @@ class ImageController
             exit;
         }
 
-        if (!$this->productExists($productId)) {
-            $this->logger->warning('Deleção falhou: Produto não encontrado', [
-                'user_id' => $userId,
-                'product_id' => $productId,
-                'filename' => $filename
-            ]);
-            http_response_code(404);
-            echo json_encode(['error' => 'Produto não encontrado']);
+        try {
+            if (!$this->productExists($productId)) {
+                $this->logger->warning('Deleção falhou: Produto não encontrado', [
+                    'user_id' => $userId,
+                    'product_id' => $productId,
+                    'filename' => $filename
+                ]);
+                http_response_code(404);
+                echo json_encode(['error' => 'Produto não encontrado']);
+                exit;
+            }
+        } catch (\Throwable $e) {
+            $this->logger->exception($e, 'Erro ao verificar existência do produto');
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro interno do servidor']);
             exit;
         }
 
@@ -248,16 +266,15 @@ class ImageController
     private function productExists(int $productId): bool
     {
         try {
-            require_once __DIR__ . '/../../config/database.php';
-            $pdo = Database::connect();
+            require_once __DIR__ . '/../../../../config/database.php';
+            $pdo = \Database::connect();
             
             $stmt = $pdo->prepare('SELECT id FROM products WHERE id = ? LIMIT 1');
             $stmt->execute([$productId]);
             
             return $stmt->fetch() !== false;
         } catch (\Throwable $e) {
-            $this->logger->exception($e, 'Erro ao verificar existência do produto');
-            return false;
+            throw $e;
         }
     }
 }

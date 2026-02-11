@@ -5,19 +5,20 @@ const CartContext = createContext();
 export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
 
-  function addToCart(product) {
+  function addToCart(product, quantity = 1) {
+    const qty = Math.max(1, parseInt(quantity, 10) || 1);
     setCart(prev => {
       const item = prev.find(p => p.id === product.id);
 
       if (item) {
         return prev.map(p =>
           p.id === product.id
-            ? { ...p, quantity: p.quantity + 1 }
+            ? { ...p, quantity: p.quantity + qty }
             : p
         );
       }
 
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: qty }];
     });
   }
 

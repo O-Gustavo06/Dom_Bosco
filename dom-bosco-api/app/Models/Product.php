@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../config/database.php';
 class Product
 {
     protected $table = 'products';
-    protected $fillable = ['name', 'description', 'price', 'stock', 'category', 'image_url'];
+    protected $fillable = ['name', 'description', 'price', 'category', 'image_url'];
     
     private PDO $pdo;
 
@@ -14,9 +14,7 @@ class Product
         $this->pdo = Database::connection();
     }
 
-    /* ==========================
-       CONSULTAS
-       ========================== */
+    
 
     
     public function getAll(): array
@@ -27,7 +25,6 @@ class Product
                 p.name,
                 p.description,
                 p.price,
-                p.stock,
                 p.active,
                 p.image,
                 p.category_id,
@@ -52,7 +49,6 @@ class Product
                 p.name,
                 p.description,
                 p.price,
-                p.stock,
                 p.active,
                 p.image,
                 p.category_id,
@@ -77,7 +73,6 @@ class Product
                 p.name,
                 p.description,
                 p.price,
-                p.stock,
                 p.active,
                 p.image,
                 p.category_id,
@@ -96,57 +91,112 @@ class Product
         return $product ?: null;
     }
 
-    /* ==========================
-       ESCRITA
-       ========================== */
+    
 
     
     public function create(array $data): int
     {
+        $imageValue = $this->normalizeImageValue($data['image'] ?? null);
+
         $stmt = $this->pdo->prepare(
-            'INSERT INTO products
-                (name, description, price, stock, category_id, image, active, created_at)
-             VALUES
-                (:name, :description, :price, :stock, :category_id, :image, 1, datetime(\'now\'))'
+                'INSERT INTO products
+                     (name, description, price, category_id, image, active, created_at)
+                 VALUES
+                     (:name, :description, :price, :category_id, :image, 1, datetime(\'now\'))'
         );
 
         $stmt->execute([
             ':name'        => $data['name'],
             ':description' => $data['description'],
             ':price'       => $data['price'],
-            ':stock'       => $data['stock'],
             ':category_id' => $data['category_id'],
-            ':image'       => $data['image']
+            ':image'       => $imageValue
         ]);
 
-        return (int) $this->pdo->lastInsertId();
+        $productId = (int) $this->pdo->lastInsertId();
+
+        require_once __DIR__ . '/Inventory.php';
+        $inventory = new Inventory();
+        $quantity = isset($data['stock']) ? (int) $data['stock'] : 0;
+        $inventory->ensureRecord($productId, $quantity, 5);
+
+        return $productId;
     }
 
     
     public function update(int $id, array $data): bool
     {
+        $imageValue = $this->normalizeImageValue($data['image'] ?? null);
+
         $stmt = $this->pdo->prepare(
             'UPDATE products SET
                 name = :name,
                 description = :description,
                 price = :price,
-                stock = :stock,
                 category_id = :category_id,
                 image = :image,
                 active = :active
              WHERE id = :id'
         );
 
-        return $stmt->execute([
+        $result = $stmt->execute([
             ':id'          => $id,
             ':name'        => $data['name'],
             ':description' => $data['description'],
             ':price'       => $data['price'],
-            ':stock'       => $data['stock'],
             ':category_id' => $data['category_id'],
-            ':image'       => $data['image'],
+            ':image'       => $imageValue,
             ':active'      => $data['active']
         ]);
+
+        if ($result && array_key_exists('stock', $data)) {
+            require_once __DIR__ . '/Inventory.php';
+            $inventory = new Inventory();
+            $inventory->updateQuantity((int) $id, (int) $data['stock'], 'Sync from product update', null);
+        }
+
+        return $result;
+    }
+
+    private function normalizeImageValue($image): ?string
+    {
+        $maxImages = 4;
+
+        if ($image === null) {
+            return null;
+        }
+
+        if (is_array($image)) {
+            $images = array_values(array_filter(array_map('trim', $image)));
+            $images = array_slice($images, 0, $maxImages);
+            if (count($images) === 0) {
+                return null;
+            }
+
+            return json_encode($images, JSON_UNESCAPED_UNICODE);
+        }
+
+        if (is_string($image)) {
+            $trimmed = trim($image);
+            if ($trimmed === '') {
+                return null;
+            }
+
+            if (str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($trimmed, true);
+                if (is_array($decoded)) {
+                    $images = array_values(array_filter(array_map('trim', $decoded)));
+                    $images = array_slice($images, 0, $maxImages);
+                    return count($images) > 0
+                        ? json_encode($images, JSON_UNESCAPED_UNICODE)
+                        : null;
+                }
+            }
+
+            return $trimmed;
+        }
+
+        return (string) $image;
     }
 
     
@@ -180,6 +230,7 @@ class Product
 
         $stmt = $this->pdo->prepare('
             SELECT COALESCE(i.quantity, 0) as quantity
+                 , COALESCE(i.min_quantity, 5) as min_quantity
             FROM products p
             LEFT JOIN inventory i ON i.product_id = p.id
             WHERE p.id = :id
@@ -192,7 +243,8 @@ class Product
         }
 
         $quantity = (int) $result['quantity'];
-        $shouldBeActive = $quantity > 5 ? 1 : 0;
+        $minQuantity = (int) $result['min_quantity'];
+        $shouldBeActive = $quantity > $minQuantity ? 1 : 0;
 
         $stmt = $this->pdo->prepare('
             UPDATE products 
@@ -217,7 +269,7 @@ class Product
                 SELECT p.id
                 FROM products p
                 LEFT JOIN inventory i ON i.product_id = p.id
-                WHERE COALESCE(i.quantity, 0) <= 5
+                WHERE COALESCE(i.quantity, 0) <= COALESCE(i.min_quantity, 5)
             )
         ');
         $inactivated = $stmt->rowCount();
@@ -229,7 +281,7 @@ class Product
                 SELECT p.id
                 FROM products p
                 INNER JOIN inventory i ON i.product_id = p.id
-                WHERE i.quantity > 5
+                WHERE i.quantity > COALESCE(i.min_quantity, 5)
             )
         ');
         $activated = $stmt->rowCount();
