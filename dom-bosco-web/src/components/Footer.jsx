@@ -5,7 +5,7 @@ import { useTheme } from "../contexts/ThemeContext";
 function Footer() {
   const { isDark } = useTheme();
   const [settings, setSettings] = useState({
-    company_name: "Dom Bosco Distribuidora",
+    company_name: "Dom Bosco",
     company_description: "Sua papelaria completa com os melhores produtos e preços.",
     contact_phone: "(14) 3402-5500",
     contact_whatsapp: "(14) 99674-1119",
